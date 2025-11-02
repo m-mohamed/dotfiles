@@ -206,11 +206,11 @@ critical_dirs=(
 )
 
 # ZSH-specific directories
+# NOTE: antidote directory is NOT created here - it's created by 06-plugins.zsh during first ZSH startup
 zsh_dirs=(
   "$HOME/.local/state/zsh"
   "$HOME/.cache/zsh"
   "$HOME/.local/share/zsh"
-  "$HOME/.local/share/antidote"
 )
 
 all_dirs=("${critical_dirs[@]}" "${zsh_dirs[@]}")
