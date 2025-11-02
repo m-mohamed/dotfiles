@@ -12,12 +12,7 @@ env:
 
 jobs:
   test-installation:
-    strategy:
-      matrix:
-        os:
-          - macos-14      # ARM64 (Apple Silicon)
-          - ubuntu-latest # Linux
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-14  # ARM64 (Apple Silicon)
     timeout-minutes: 20
 
     steps:
@@ -26,20 +21,10 @@ jobs:
 
       - name: Show runner environment
         run: |
-          echo "Runner: $(uname -s) $(uname -m)"
-          echo "OS: ${{ matrix.os }}"
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            echo "macOS version: $(sw_vers -productVersion)"
-          else
-            echo "Linux distro: $(lsb_release -d | cut -f2)"
-          fi
+          echo "Runner: $(uname -m) $(sw_vers -productVersion)"
           echo "Disk space: $(df -h / | tail -1)"
-          if command -v brew &>/dev/null; then
-            echo "Homebrew: $(brew --version | head -1)"
-            echo "Homebrew prefix: $(brew --prefix)"
-          else
-            echo "Homebrew: Not yet installed"
-          fi
+          echo "Homebrew: $(brew --version | head -1)"
+          echo "Homebrew prefix: $(brew --prefix)"
 
       - name: Run install.sh
         run: |
