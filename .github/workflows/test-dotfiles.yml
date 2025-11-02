@@ -91,13 +91,20 @@ jobs:
           # Check plugin file was generated
           test -s ~/.config/zsh/.zsh_plugins.zsh || (echo "❌ Plugin file empty or missing" && exit 1)
 
-          # List plugins (should not fail)
-          if ! zsh -i -c 'antidote list'; then
-            echo "❌ Antidote failed to load plugins"
+          # Verify plugin file has actual plugins (not just comments)
+          plugin_count=$(grep -c "^source " ~/.config/zsh/.zsh_plugins.zsh || true)
+          if [[ "$plugin_count" -eq 0 ]]; then
+            echo "❌ No plugins sourced in .zsh_plugins.zsh"
             exit 1
           fi
 
-          echo "✓ Plugins loaded successfully"
+          # Verify specific plugins are loaded by checking for their functions
+          if ! zsh -i -c 'functions | grep -q zsh-syntax-highlighting'; then
+            echo "❌ zsh-syntax-highlighting not loaded"
+            exit 1
+          fi
+
+          echo "✓ Plugins loaded successfully ($plugin_count plugins)"
 
       - name: Test core aliases work
         run: |
