@@ -1,0 +1,103 @@
+name: Test Dotfiles Installation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly Sunday test to catch dependency drift
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+
+jobs:
+  test-installation:
+    runs-on: macos-14  # ARM64 M1 runner
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show runner environment
+        run: |
+          echo "Runner: $(uname -m) $(sw_vers -productVersion)"
+          echo "Disk space: $(df -h / | tail -1)"
+          echo "Homebrew: $(brew --version | head -1)"
+          echo "Homebrew prefix: $(brew --prefix)"
+
+      - name: Run install.sh
+        run: |
+          ./install.sh
+
+      - name: Verify critical Homebrew packages installed
+        run: |
+          command -v stow || (echo "❌ stow not installed" && exit 1)
+          command -v zsh || (echo "❌ zsh not installed" && exit 1)
+          command -v eza || (echo "❌ eza not installed" && exit 1)
+          command -v bat || (echo "❌ bat not installed" && exit 1)
+          command -v fzf || (echo "❌ fzf not installed" && exit 1)
+          command -v rg || (echo "❌ ripgrep not installed" && exit 1)
+          command -v fd || (echo "❌ fd not installed" && exit 1)
+          command -v nvim || (echo "❌ nvim not installed" && exit 1)
+          command -v starship || (echo "❌ starship not installed" && exit 1)
+          echo "✓ All critical packages verified"
+
+      - name: Verify stow symlinks created
+        run: |
+          test -L ~/.zshenv || (echo "❌ ~/.zshenv not symlinked" && exit 1)
+          test -L ~/.zprofile || (echo "❌ ~/.zprofile not symlinked" && exit 1)
+          test -L ~/.config/zsh/.zshrc || (echo "❌ ~/.config/zsh/.zshrc not symlinked" && exit 1)
+          test -L ~/.gitconfig || (echo "❌ ~/.gitconfig not symlinked" && exit 1)
+          echo "✓ All critical symlinks verified"
+
+      - name: Test ZSH loads without errors
+        run: |
+          zsh -i -c 'echo "✓ ZSH loaded successfully"'
+
+      - name: Verify Antidote installed plugins
+        run: |
+          echo "Installed plugins:"
+          zsh -i -c 'antidote list' || echo "⚠️  Antidote might still be installing"
+
+      - name: Test core aliases work
+        run: |
+          zsh -i -c 'type c' || (echo "❌ Alias 'c' not found" && exit 1)
+          zsh -i -c 'type v' || (echo "❌ Alias 'v' not found" && exit 1)
+          zsh -i -c 'type ll' || (echo "❌ Alias 'll' not found" && exit 1)
+          echo "✓ Core aliases functional"
+
+      - name: Test modern tools work
+        run: |
+          zsh -i -c 'eza --version' || (echo "❌ eza not working" && exit 1)
+          zsh -i -c 'bat --version' || (echo "❌ bat not working" && exit 1)
+          zsh -i -c 'fzf --version' || (echo "❌ fzf not working" && exit 1)
+          zsh -i -c 'rg --version' || (echo "❌ ripgrep not working" && exit 1)
+          zsh -i -c 'fd --version' || (echo "❌ fd not working" && exit 1)
+          echo "✓ Modern tools functional"
+
+      - name: Benchmark ZSH startup time
+        run: |
+          echo "Running startup benchmark (5 iterations)..."
+
+          total=0
+          runs=5
+
+          for i in $(seq 1 $runs); do
+            result=$( { /usr/bin/time -p zsh -i -c exit 2>&1; } | grep real | awk '{print $2}')
+            ms=$(echo "$result * 1000" | bc)
+            echo "Run $i: ${ms}ms"
+            total=$(echo "$total + $ms" | bc)
+          done
+
+          avg=$(echo "scale=2; $total / $runs" | bc)
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Average startup time: ${avg}ms"
+
+          if [ $(echo "$avg > 200" | bc) -eq 1 ]; then
+            echo "⚠️  Warning: Startup time ${avg}ms exceeds 200ms threshold"
+            echo "This is informational, not failing the build (CI is slower than local)"
+          else
+            echo "✓ Startup time ${avg}ms is acceptable for CI environment"
+          fi

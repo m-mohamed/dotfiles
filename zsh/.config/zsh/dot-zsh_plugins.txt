@@ -1,0 +1,18 @@
+# ZSH Plugin Manifest - Managed by Antidote
+# Plugins load in order listed
+
+# ══════════════════════════════════════════════════════════════════════
+# Essential Plugins (Pure Lightweight, No OMZ)
+# ══════════════════════════════════════════════════════════════════════
+
+# Syntax highlighting - MUST load before autosuggestions
+zsh-users/zsh-syntax-highlighting
+
+# Fish-like autosuggestions (gray text from history)
+zsh-users/zsh-autosuggestions
+
+# Additional completion definitions
+zsh-users/zsh-completions kind:fpath
+
+# Better history substring search (up/down arrows)
+zsh-users/zsh-history-substring-search
