@@ -3,6 +3,10 @@
 
 # Added by OrbStack: command-line tools and integration
 # Comment this line if you don't want it to be added again.
-source ~/.orbstack/shell/init.zsh 2>/dev/null || :
+if [[ -f ~/.orbstack/shell/init.zsh ]]; then
+  if ! source ~/.orbstack/shell/init.zsh 2>&1; then
+    print -P "%F{yellow}WARNING: OrbStack init failed to load%f" >&2
+  fi
+fi
 
 # Note: Homebrew setup moved to ~/.zshenv for universal availability

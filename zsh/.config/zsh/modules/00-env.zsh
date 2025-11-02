@@ -2,18 +2,52 @@
 # Loaded first, sets up environment for other modules
 
 # ══════════════════════════════════════════════════════════════════════
-# XDG Directory Creation (Ensure all required dirs exist)
+# XDG Directory Verification
 # ══════════════════════════════════════════════════════════════════════
-# Create XDG directories if they don't exist (idempotent, safe to run multiple times)
-[[ -d "$XDG_CONFIG_HOME" ]] || mkdir -p "$XDG_CONFIG_HOME"
-[[ -d "$XDG_DATA_HOME" ]] || mkdir -p "$XDG_DATA_HOME"
-[[ -d "$XDG_CACHE_HOME" ]] || mkdir -p "$XDG_CACHE_HOME"
-[[ -d "$XDG_STATE_HOME" ]] || mkdir -p "$XDG_STATE_HOME"
+# Verify XDG directories exist (created by install.sh)
+# If they don't exist, show error and exit gracefully
 
-# Create ZSH-specific directories
-[[ -d "$XDG_CACHE_HOME/zsh" ]] || mkdir -p "$XDG_CACHE_HOME/zsh"
-[[ -d "$XDG_STATE_HOME/zsh" ]] || mkdir -p "$XDG_STATE_HOME/zsh"
-[[ -d "$XDG_DATA_HOME/zsh" ]] || mkdir -p "$XDG_DATA_HOME/zsh"
+verify_xdg_dirs() {
+  local required_dirs=(
+    "$XDG_CONFIG_HOME"
+    "$XDG_DATA_HOME"
+    "$XDG_CACHE_HOME"
+    "$XDG_STATE_HOME"
+    "$XDG_CACHE_HOME/zsh"
+    "$XDG_STATE_HOME/zsh"
+    "$XDG_DATA_HOME/zsh"
+  )
+
+  local missing_dirs=()
+
+  for dir in "${required_dirs[@]}"; do
+    if [[ ! -d "$dir" ]]; then
+      missing_dirs+=("$dir")
+    fi
+  done
+
+  if [[ ${#missing_dirs[@]} -gt 0 ]]; then
+    print -P "%F{red}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%f" >&2
+    print -P "%F{red}ERROR: Required XDG directories are missing%f" >&2
+    print -P "%F{red}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%f" >&2
+    print "" >&2
+    print -P "%F{yellow}Missing directories:%f" >&2
+    for dir in "${missing_dirs[@]}"; do
+      print "  - $dir" >&2
+    done
+    print "" >&2
+    print -P "%F{yellow}To fix this, run:%f" >&2
+    print "  cd ~/dotfiles && ./install.sh" >&2
+    print "" >&2
+    return 1
+  fi
+}
+
+# Run verification
+if ! verify_xdg_dirs; then
+  # Return early to prevent loading rest of config with broken environment
+  return 1
+fi
 
 # ══════════════════════════════════════════════════════════════════════
 # Editor Configuration

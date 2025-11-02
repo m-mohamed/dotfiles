@@ -68,7 +68,10 @@ if command -v fzf &>/dev/null; then
   fi
 
   # Source fzf key bindings and completion
-  source <(fzf --zsh) 2>/dev/null
+  if ! source <(fzf --zsh) 2>&1; then
+    print -P "%F{yellow}WARNING: FZF keybindings failed to load%f" >&2
+    print -P "%F{yellow}FZF search will work, but keybindings (Ctrl-R, Ctrl-T, Alt-C) may not%f" >&2
+  fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════

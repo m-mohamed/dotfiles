@@ -36,10 +36,17 @@ packages=(
 )
 
 for package in "${packages[@]}"; do
-  if stow -D "$package" 2>/dev/null; then
-    echo -e "${GREEN}✓ Unstowed $package${NC}"
+  # Check if package is actually stowed first
+  if stow -n -D "$package" &>/dev/null; then
+    # Package is stowed, try to unstow it
+    if stow_output=$(stow -D "$package" 2>&1); then
+      echo -e "${GREEN}✓ Unstowed $package${NC}"
+    else
+      echo -e "${RED}✗ Failed to unstow $package${NC}"
+      echo "$stow_output" | sed 's/^/   /' | head -3
+    fi
   else
-    echo -e "${YELLOW}⚠ $package not stowed or already removed${NC}"
+    echo -e "${YELLOW}ℹ $package not stowed${NC}"
   fi
 done
 
@@ -62,7 +69,11 @@ if [[ -d "$HOME/dotfiles-backup" ]]; then
   done
 
   if [[ $count -gt 0 ]]; then
-    rmdir "$HOME/dotfiles-backup" 2>/dev/null && echo -e "${GREEN}✓ Removed empty backup directory${NC}" || true
+    if rmdir "$HOME/dotfiles-backup" 2>&1; then
+      echo -e "${GREEN}✓ Removed empty backup directory${NC}"
+    else
+      echo -e "${YELLOW}ℹ Backup directory not empty (contains other files)${NC}"
+    fi
   fi
 else
   echo -e "${GREEN}✓ No backups to restore${NC}"
@@ -72,17 +83,25 @@ echo ""
 echo -e "${BLUE}3. Cleaning generated files...${NC}"
 
 # Clean completion dumps
-if rm -f "$HOME/.cache/zsh/.zcompdump"* 2>/dev/null; then
-  echo -e "${GREEN}✓ Removed completion cache${NC}"
+if [[ -n "$(ls -A "$HOME/.cache/zsh/.zcompdump"* 2>/dev/null)" ]]; then
+  if rm -f "$HOME/.cache/zsh/.zcompdump"* 2>&1; then
+    echo -e "${GREEN}✓ Removed completion cache${NC}"
+  else
+    echo -e "${RED}✗ Failed to remove completion cache (permission denied?)${NC}"
+  fi
 else
-  echo -e "${YELLOW}⚠ No completion cache found${NC}"
+  echo -e "${YELLOW}ℹ No completion cache found${NC}"
 fi
 
 # Clean generated plugin file
-if rm -f "$HOME/.config/zsh/.zsh_plugins.zsh" 2>/dev/null; then
-  echo -e "${GREEN}✓ Removed generated plugins${NC}"
+if [[ -f "$HOME/.config/zsh/.zsh_plugins.zsh" ]]; then
+  if rm -f "$HOME/.config/zsh/.zsh_plugins.zsh" 2>&1; then
+    echo -e "${GREEN}✓ Removed generated plugins${NC}"
+  else
+    echo -e "${RED}✗ Failed to remove plugin file (permission denied?)${NC}"
+  fi
 else
-  echo -e "${YELLOW}⚠ No generated plugin file found${NC}"
+  echo -e "${YELLOW}ℹ No generated plugin file found${NC}"
 fi
 
 # Don't delete history (user might want to keep it)
