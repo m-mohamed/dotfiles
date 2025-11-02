@@ -176,7 +176,7 @@ fi
 
 # Run brew bundle - CRITICAL: must succeed
 echo "Installing packages from Brewfile..."
-if ! brew bundle install --no-lock; then
+if ! brew bundle install; then
   fatal "Brew bundle installation failed. Check Brewfile for issues."
 fi
 echo -e "${GREEN}✓ All Homebrew packages installed${NC}"
