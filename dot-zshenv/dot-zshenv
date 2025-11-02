@@ -1,0 +1,32 @@
+# ~/.zshenv - ZSH Environment Setup
+# This file is ALWAYS sourced, so keep it minimal
+
+# Set XDG Base Directories
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# Set ZDOTDIR to use XDG-compliant location
+export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+
+# ══════════════════════════════════════════════════════════════════════
+# Critical PATH Setup - Needed for all shell types
+# ══════════════════════════════════════════════════════════════════════
+# Homebrew environment (auto-detect path across platforms)
+if command -v brew >/dev/null 2>&1; then
+  eval "$(brew shellenv)"
+else
+  for brew_path in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+    if [[ -x "$brew_path" ]]; then
+      eval "$("$brew_path" shellenv)"
+      break
+    fi
+  done
+fi
+
+# uv Python tooling
+export PATH="$PATH:$HOME/.local/bin"
+
+# Note: Bun is used as the JavaScript runtime (installed via Homebrew).
+# Python tools are managed by uv (installed via Homebrew).

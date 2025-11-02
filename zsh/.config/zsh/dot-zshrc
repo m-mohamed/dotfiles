@@ -1,0 +1,28 @@
+#!/usr/bin/env zsh
+# ~/.config/zsh/.zshrc
+# Main ZSH configuration - loads modules in order
+
+# Optional: Performance profiling (uncomment to debug slow startup)
+# zmodload zsh/zprof
+
+# ══════════════════════════════════════════════════════════════════════
+# Load Configuration Modules
+# ══════════════════════════════════════════════════════════════════════
+# Load configuration modules in numeric order (00-09 only)
+# IMPORTANT: Use zero-padded two-digit prefixes (00, 01, 02...)
+# Pattern restricts to 0[0-9] to prevent loading 10-foo.zsh before 02-options.zsh
+for config_file in ${ZDOTDIR:-$HOME/.config/zsh}/modules/0[0-9]-*.zsh(N); do
+  source "$config_file"
+done
+
+# ══════════════════════════════════════════════════════════════════════
+# Local Overrides (Load last, not tracked in git)
+# ══════════════════════════════════════════════════════════════════════
+# Create a ~/.config/zsh/local.zsh file for machine-specific settings
+# Examples: work-specific aliases, local PATH additions, private configs
+if [[ -f "${ZDOTDIR:-$HOME/.config/zsh}/local.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME/.config/zsh}/local.zsh"
+fi
+
+# Optional: Show performance report (uncomment with zprof above)
+# zprof
