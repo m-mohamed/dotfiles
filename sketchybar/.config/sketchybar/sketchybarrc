@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# Sketchybar Configuration
+
+# ══════════════════════════════════════════════════════════════════════
+# Load Color Scheme and Icons
+# ══════════════════════════════════════════════════════════════════════
+
+source "$HOME/.config/sketchybar/colors.sh"
+source "$HOME/.config/sketchybar/icons.sh"
+
+PLUGIN_DIR="$HOME/.config/sketchybar/plugins"
+ITEM_DIR="$HOME/.config/sketchybar/items"
+
+# ══════════════════════════════════════════════════════════════════════
+# Start Stats Provider (Event-Driven System Monitoring)
+# ══════════════════════════════════════════════════════════════════════
+
+# Start stats_provider daemon for event-driven system monitoring
+killall stats_provider 2>/dev/null
+/opt/homebrew/bin/stats_provider --cpu usage --memory ram_usage --battery percentage --interval 5 &
+
+# ══════════════════════════════════════════════════════════════════════
+# Bar Appearance
+# ══════════════════════════════════════════════════════════════════════
+
+sketchybar --bar \
+  position=top \
+  height=36 \
+  color=$BAR_COLOR \
+  blur_radius=30 \
+  shadow=on \
+  sticky=on \
+  padding_left=10 \
+  padding_right=10 \
+  y_offset=0 \
+  corner_radius=9
+
+# ══════════════════════════════════════════════════════════════════════
+# Default Item Settings
+# ══════════════════════════════════════════════════════════════════════
+
+sketchybar --default \
+  updates=when_shown \
+  icon.font="SF Pro:Semibold:12.0" \
+  icon.color=$TEXT_COLOR \
+  icon.padding_left=6 \
+  icon.padding_right=3 \
+  label.font="SF Pro:Semibold:12.0" \
+  label.color=$TEXT_COLOR \
+  label.padding_left=3 \
+  label.padding_right=6 \
+  padding_left=4 \
+  padding_right=4 \
+  background.color=$ITEM_BG_COLOR \
+  background.corner_radius=10 \
+  background.height=20 \
+  background.border_width=0 \
+  shadow.drawing=off \
+  scroll_texts=on
+
+# ══════════════════════════════════════════════════════════════════════
+# Events
+# ══════════════════════════════════════════════════════════════════════
+
+# Register aerospace workspace change event
+sketchybar --add event aerospace_workspace_change
+
+# Register system_stats event for stats_provider integration
+sketchybar --add event system_stats
+
+# ══════════════════════════════════════════════════════════════════════
+# Top Section: Apple Menu + Workspaces + Current App
+# ══════════════════════════════════════════════════════════════════════
+
+# Apple menu with popup
+source "$ITEM_DIR/apple.sh"
+
+# Load workspace indicators (dynamic from aerospace)
+source "$ITEM_DIR/spaces.sh"
+
+# Front App (shows currently focused application)
+sketchybar --add item front_app left \
+           --set front_app \
+                 icon.drawing=off \
+                 label.color=$ACCENT_COLOR \
+                 label.font="SF Pro:Medium:13.0" \
+                 background.padding_left=12 \
+                 script="$PLUGIN_DIR/front_app.sh" \
+           --subscribe front_app front_app_switched
+
+# ══════════════════════════════════════════════════════════════════════
+# Bottom Section: Status Widgets
+# ══════════════════════════════════════════════════════════════════════
+
+# WiFi (with click to open Network Settings)
+sketchybar --add item wifi right \
+           --set wifi \
+                 update_freq=10 \
+                 script="$PLUGIN_DIR/wifi.sh" \
+                 click_script="open 'x-apple.systempreferences:com.apple.Network-Settings.extension'"
+
+# Battery
+sketchybar --add item battery right \
+           --set battery \
+                 script="$PLUGIN_DIR/battery.sh" \
+           --subscribe battery system_stats
+
+# Clock
+sketchybar --add item clock right \
+           --set clock \
+                 update_freq=10 \
+                 icon=$ICON_CLOCK \
+                 script="$PLUGIN_DIR/clock.sh"
+
+# ══════════════════════════════════════════════════════════════════════
+# Finalize
+# ══════════════════════════════════════════════════════════════════════
+
+sketchybar --update
+
+echo "sketchybar configuration loaded!"
