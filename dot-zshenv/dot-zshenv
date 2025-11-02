@@ -1,0 +1,20 @@
+# ~/.zshenv - ZSH Environment Setup
+# This file is ALWAYS sourced, so keep it minimal
+
+# Set XDG Base Directories
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# Set ZDOTDIR to use XDG-compliant location
+export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+
+# ══════════════════════════════════════════════════════════════════════
+# Critical PATH Setup - Needed for all shell types
+# ══════════════════════════════════════════════════════════════════════
+# Homebrew environment (ARM64 Mac)
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# uv Python tooling
+export PATH="$PATH:$HOME/.local/bin"
