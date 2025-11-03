@@ -18,3 +18,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # uv Python tooling
 export PATH="$PATH:$HOME/.local/bin"
+
+# NVM default Node (for git hooks and non-interactive shells)
+# This ensures Node is available even when NVM isn't lazy-loaded
+export PATH="$HOME/.nvm/versions/node/v23.3.0/bin:$PATH"
