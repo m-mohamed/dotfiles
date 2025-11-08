@@ -11,6 +11,12 @@ config.font_size = 22
 config.font = wezterm.font("JetBrainsMono Nerd Font")
 config.window_decorations = "RESIZE"
 config.use_dead_keys = false
+-- macOS Option/Alt key behavior: send Alt/Meta instead of composed characters
+-- Left Alt = Meta/Alt modifier (for Aerospace window manager and CLI tools)
+-- Right Alt = Meta/Alt modifier (consistent behavior)
+-- This allows Alt+key combinations to work properly in terminal applications
+config.send_composed_key_when_left_alt_is_pressed = false
+config.send_composed_key_when_right_alt_is_pressed = false
 config.pane_focus_follows_mouse = true
 config.scrollback_lines = 10000
 config.inactive_pane_hsb = {
@@ -25,9 +31,12 @@ config.window_padding = {
 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║ Leader Key (Ctrl+g)                                                  ║
+-- ║ Leader Key (Ctrl+a) - Screen/Tmux Standard                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-config.leader = { key = "g", mods = "CTRL", timeout_milliseconds = 1000 }
+-- Using Ctrl+a instead of Ctrl+g for better ergonomics and industry standard
+-- Ctrl+a: Home row adjacent, no conflict with Neovim's Ctrl+g (show file position)
+-- Matches GNU Screen (1987) and tmux convention
+config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Tab Bar Settings                                                     ║

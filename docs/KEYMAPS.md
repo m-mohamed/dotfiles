@@ -8,7 +8,7 @@ Your 80/20 guide to daily workflows with WezTerm, Neovim, and Aerospace.
 
 ### Most Used (Commit to Muscle Memory)
 ```
-WezTerm:     Ctrl+g → s/v/h/j/k/l/q/z/t/[/]
+WezTerm:     Ctrl+a → s/v/h/j/k/l/q/z/t/[/]
 Neovim:      Space Space / gd / gr / K / Space ca / Shift+H/L
 Aerospace:   Alt+h/j/k/l / Alt+b/t/d / Alt+Shift+h/j/k/l / Alt+Tab
 ```
@@ -17,7 +17,7 @@ Aerospace:   Alt+h/j/k/l / Alt+b/t/d / Alt+Shift+h/j/k/l / Alt+Tab
 ```
 Level 1: Workspaces (Aerospace)     → Alt+b/t/d/m/s/e
 Level 2: Windows (Aerospace)        → Alt+h/j/k/l
-Level 3: Terminal Panes (WezTerm)   → Ctrl+g → h/j/k/l
+Level 3: Terminal Panes (WezTerm)   → Ctrl+a → h/j/k/l
 Level 4: Editor Buffers (Neovim)    → Shift+H/L
 Level 5: Editor Splits (Neovim)     → Ctrl+h/j/k/l
 ```
@@ -27,31 +27,31 @@ Level 5: Editor Splits (Neovim)     → Ctrl+h/j/k/l
 ## 1. WezTerm Terminal Multiplexer
 
 ### Leader Key
-**`Ctrl+g`** (1 second timeout)
+**`Ctrl+a`** (1 second timeout) - Screen/Tmux standard for better ergonomics
 
 ### Top 7 Essential Keymaps (Daily, 10x/day)
 
 | Keymap | Action | Notes |
 |--------|--------|-------|
-| `Ctrl+g` → `s` | Split pane vertically | Creates horizontal split |
-| `Ctrl+g` → `v` | Split pane horizontally | Creates vertical split |
-| `Ctrl+g` → `h/j/k/l` | Navigate panes (vim-style) | Focus left/down/up/right |
-| `Ctrl+g` → `q` | Close current pane | No confirmation |
-| `Ctrl+g` → `z` | Zoom/maximize pane | Toggle fullscreen for current pane |
-| `Ctrl+g` → `t` | New tab | Create in current domain |
-| `Ctrl+g` → `[` / `]` | Previous/next tab | Quick tab switching |
+| `Ctrl+a` → `s` | Split pane vertically | Creates horizontal split |
+| `Ctrl+a` → `v` | Split pane horizontally | Creates vertical split |
+| `Ctrl+a` → `h/j/k/l` | Navigate panes (vim-style) | Focus left/down/up/right |
+| `Ctrl+a` → `q` | Close current pane | No confirmation |
+| `Ctrl+a` → `z` | Zoom/maximize pane | Toggle fullscreen for current pane |
+| `Ctrl+a` → `t` | New tab | Create in current domain |
+| `Ctrl+a` → `[` / `]` | Previous/next tab | Quick tab switching |
 
 ### Next 7 Important Keymaps (Regular use)
 
 | Keymap | Action | Notes |
 |--------|--------|-------|
-| `Ctrl+g` → `b` | Show tab navigator | Visual tab picker |
-| `Ctrl+g` → `r` | Rename tab | Prompt for new name |
-| `Ctrl+g` → `Shift+H/L` | Move tab left/right | Reorder tabs |
-| `Ctrl+g` → `w` | Show workspaces | Workspace launcher |
-| `Ctrl+g` → `e` | Switch workspace | Prompt for workspace name |
-| `Ctrl+g` → `Space` | QuickSelect | Select URLs, paths, git SHAs |
-| `Ctrl+g` → `a/d` | Attach/detach session | Unix domain persistence |
+| `Ctrl+a` → `b` | Show tab navigator | Visual tab picker |
+| `Ctrl+a` → `r` | Rename tab | Prompt for new name |
+| `Ctrl+a` → `Shift+H/L` | Move tab left/right | Reorder tabs |
+| `Ctrl+a` → `w` | Show workspaces | Workspace launcher |
+| `Ctrl+a` → `e` | Switch workspace | Prompt for workspace name |
+| `Ctrl+a` → `Space` | QuickSelect | Select URLs, paths, git SHAs |
+| `Ctrl+a` → `a/d` | Attach/detach session | Unix domain persistence |
 
 ### Other Useful Features
 
@@ -78,6 +78,10 @@ Level 5: Editor Splits (Neovim)     → Ctrl+h/j/k/l
 
 ### Leader Key
 **`Space`** (default LazyVim)
+
+### Important Note: Disabled Keybindings
+**Alt+j/k** line movement has been disabled to prevent conflicts with Aerospace window navigation.
+**Alternatives:** Use `]e` / `[e` for line movement, or visual mode + `:m` commands.
 
 ### Top 10 Essential Keymaps (Daily coding)
 
@@ -217,7 +221,7 @@ Level 5: Editor Splits (Neovim)     → Ctrl+h/j/k/l
 ### Pattern 1: Start New Project
 ```bash
 Alt+t               # Switch to Terminal workspace
-Ctrl+g → t          # New WezTerm tab
+Ctrl+a → t          # New WezTerm tab
 cd ~/projects/foo   # Navigate to project
 nvim .              # Open Neovim
 Alt+d               # Switch to Dev workspace (Neovim auto-moves)
@@ -226,7 +230,7 @@ Alt+d               # Switch to Dev workspace (Neovim auto-moves)
 ### Pattern 2: Split Terminal + Editor
 ```bash
 Alt+t               # Terminal workspace
-Ctrl+g → s          # Split WezTerm vertically
+Ctrl+a → s          # Split WezTerm vertically
 # Top pane: run dev server
 # Bottom pane: git commands
 Alt+d               # Switch to Neovim for coding
@@ -270,7 +274,7 @@ git add -p          # Stage changes
 ```bash
 # Morning: WezTerm auto-attaches to unix domain
 # All tabs/panes/workspaces from yesterday restored
-Ctrl+g → b          # Show tab navigator
+Ctrl+a → b          # Show tab navigator
 # Pick up where you left off
 
 # Evening: Just close terminal
@@ -332,13 +336,13 @@ Ctrl+g → b          # Show tab navigator
 
 - WezTerm unix domain = tmux-like persistence without tmux
 - Survives terminal crashes, restarts
-- `Ctrl+g → a/d` to manually attach/detach if needed
+- `Ctrl+a → a/d` to manually attach/detach if needed
 
 ### 5. Quick Context Switching
 
 - `Alt+Tab`: Toggle between two main workspaces
 - `Shift+H/L` in Neovim: Quick buffer switching
-- `Ctrl+g → [/]`: WezTerm tab switching
+- `Ctrl+a → [/]`: WezTerm tab switching
 - Master these three for 90% of navigation
 
 ---
@@ -350,7 +354,7 @@ Ctrl+g → b          # Show tab navigator
 ```
 Alt+b/t/d           # Workspace switching
 Space Space         # Find files
-Ctrl+g → s/v/h/j/k/l # Terminal panes
+Ctrl+a → s/v/h/j/k/l # Terminal panes
 ```
 
 **Goal**: Navigate between apps and create terminal splits without thinking.
@@ -393,9 +397,9 @@ Modal modes         # Resize, workspace
 
 ### "Lost in splits/panes/windows"
 
-- `Ctrl+g → z` to zoom current WezTerm pane
+- `Ctrl+a → z` to zoom current WezTerm pane
 - `Alt+Shift+f` to fullscreen current window
-- `Ctrl+g → b` for visual tab navigator
+- `Ctrl+a → b` for visual tab navigator
 
 ### "Can't find my window"
 
