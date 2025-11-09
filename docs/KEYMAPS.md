@@ -1,5 +1,7 @@
 # Essential Keymaps Cheat Sheet
 
+**Last Updated:** 2025-01-08 (after Ctrl+g → Ctrl+a migration)
+
 Your 80/20 guide to daily workflows with WezTerm, Neovim, and Aerospace.
 
 ---
@@ -50,6 +52,8 @@ Level 5: Editor Splits (Neovim)     → Ctrl+h/j/k/l
 | `Ctrl+a` → `Shift+H/L` | Move tab left/right | Reorder tabs |
 | `Ctrl+a` → `w` | Show workspaces | Workspace launcher |
 | `Ctrl+a` → `e` | Switch workspace | Prompt for workspace name |
+| `Ctrl+a` → `Shift+R` | Rename workspace | Prompt for new workspace name |
+| `Ctrl+a` → `p` | Show launcher | General launcher menu |
 | `Ctrl+a` → `Space` | QuickSelect | Select URLs, paths, git SHAs |
 | `Ctrl+a` → `a/d` | Attach/detach session | Unix domain persistence |
 
