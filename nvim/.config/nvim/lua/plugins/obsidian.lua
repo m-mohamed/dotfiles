@@ -70,20 +70,33 @@ return {
         name = "snacks.picker",
       },
 
-      -- UI configuration
+      -- UI configuration - enabled for checkbox functionality
       ui = {
         enable = true,
-        checkboxes = {
-          [" "] = { char = "󰄱", hl_group = "ObsidianTodo", order = 1 },
-          ["x"] = { char = "", hl_group = "ObsidianDone", order = 2 },
-          [">"] = { char = "", hl_group = "ObsidianRightArrow", order = 3 },
-          ["~"] = { char = "󰰱", hl_group = "ObsidianTilde", order = 4 },
-        },
+        update_debounce = 200,
+        max_file_length = 5000,
         external_link_icon = { char = "", hl_group = "ObsidianExtLinkIcon" },
         reference_text = { hl_group = "ObsidianRefText" },
         highlight_text = { hl_group = "ObsidianHighlightText" },
         tags = { hl_group = "ObsidianTag" },
         block_ids = { hl_group = "ObsidianBlockID" },
+        hl_groups = {
+          ObsidianTodo = { bold = true, fg = "#f78c6c" },
+          ObsidianDone = { bold = true, fg = "#89ddff" },
+          ObsidianRightArrow = { bold = true, fg = "#f78c6c" },
+          ObsidianTilde = { bold = true, fg = "#ff5370" },
+          ObsidianRefText = { underline = true, fg = "#c792ea" },
+          ObsidianExtLinkIcon = { fg = "#c792ea" },
+          ObsidianTag = { italic = true, fg = "#89ddff" },
+          ObsidianBlockID = { italic = true, fg = "#89ddff" },
+          ObsidianHighlightText = { bg = "#75662e" },
+        },
+      },
+      checkboxes = {
+        [" "] = { char = "TODO", hl_group = "ObsidianTodo", order = 1 },
+        ["x"] = { char = "DONE", hl_group = "ObsidianDone", order = 2 },
+        [">"] = { char = "FORWARDED", hl_group = "ObsidianRightArrow", order = 3 },
+        ["~"] = { char = "CANCELLED", hl_group = "ObsidianTilde", order = 4 },
       },
 
       -- Additional options

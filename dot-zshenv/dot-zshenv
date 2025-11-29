@@ -13,8 +13,17 @@ export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 # ══════════════════════════════════════════════════════════════════════
 # Critical PATH Setup - Needed for all shell types
 # ══════════════════════════════════════════════════════════════════════
-# Homebrew environment (ARM64 Mac)
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew environment (auto-detect path across platforms)
+if command -v brew >/dev/null 2>&1; then
+  eval "$(brew shellenv)"
+else
+  for brew_path in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+    if [[ -x "$brew_path" ]]; then
+      eval "$("$brew_path" shellenv)"
+      break
+    fi
+  done
+fi
 
 # uv Python tooling
 export PATH="$PATH:$HOME/.local/bin"
@@ -22,3 +31,5 @@ export PATH="$PATH:$HOME/.local/bin"
 # NVM default Node (for git hooks and non-interactive shells)
 # This ensures Node is available even when NVM isn't lazy-loaded
 export PATH="$HOME/.nvm/versions/node/v23.3.0/bin:$PATH"
+
+# Load MCP secrets (see zsh modules/00-env-secrets.zsh)
