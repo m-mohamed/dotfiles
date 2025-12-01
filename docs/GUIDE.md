@@ -1019,25 +1019,80 @@ exec zsh
 
 ### Maintenance Workflow
 
-**Weekly update ritual:**
+**Automated daily maintenance (via brew-autoupdate):**
 
 ```bash
-# 1. Update Homebrew packages
-brew update && brew upgrade && brew cleanup
+# Check autoupdate status
+brew autoupdate status
 
-# 2. Update Antidote plugins
+# brew-autoupdate runs every 24 hours via macOS launchd and:
+# - Updates Homebrew metadata
+# - Upgrades all packages
+# - Runs cleanup automatically
+
+# To manually trigger (if you don't want to wait):
+brew update && brew upgrade && brew cleanup
+```
+
+**Weekly manual tasks:**
+
+```bash
+# 1. Update Antidote plugins
 antidote update
 
-# 3. Clear completion cache (force rebuild)
+# 2. Clear completion cache (force rebuild)
 rm ~/.cache/zsh/.zcompdump && exec zsh
 
-# 4. Test performance
+# 3. Test performance
 time zsh -i -c exit  # Should still be <100ms
 
-# 5. Commit Brewfile.lock
+# 4. Review and commit Brewfile changes
 cd ~/dotfiles
-git add Brewfile.lock
-git commit -m "chore: update dependencies"
+git diff Brewfile
+git add Brewfile
+git commit -m "chore: update package list"
+```
+
+**Brewfile-first workflow (adding new packages):**
+
+```bash
+# ❌ DON'T install packages directly
+brew install some-tool  # ← Not in Brewfile, will be removed on cleanup!
+
+# ✅ DO add to Brewfile first
+cd ~/dotfiles
+nvim Brewfile
+# Add: brew "some-tool"  # Description of what it does
+
+# Then install from Brewfile
+brew bundle install
+
+# Commit the change
+git add Brewfile
+git commit -m "feat: add some-tool for X purpose"
+```
+
+**Monthly cleanup ritual:**
+
+```bash
+# 1. Preview what would be removed (dry-run)
+brew bundle cleanup
+# Shows packages not in Brewfile
+
+# 2. If you want to keep something, add it to Brewfile first!
+nvim Brewfile
+# Add the package
+
+# 3. Execute strict cleanup (removes everything not in Brewfile)
+brew bundle cleanup --force
+
+# 4. Remove orphaned dependencies
+brew autoremove
+
+# 5. Deep clean caches
+brew cleanup --prune=all
+
+# Result: Only packages in Brewfile remain (source of truth enforced)
 ```
 
 **Before making changes:**

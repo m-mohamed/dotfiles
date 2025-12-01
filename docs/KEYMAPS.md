@@ -1,6 +1,6 @@
 # Essential Keymaps Cheat Sheet
 
-**Last Updated:** 2025-11-10
+**Last Updated:** 2025-11-17
 **Version:** LazyVim 2.0 + Snacks.nvim Suite
 
 Your complete guide to living in LazyVim, complemented by WezTerm and Aerospace.
@@ -32,9 +32,10 @@ Aerospace:   5% - Window management
 ## Your Setup
 
 **LazyVim Distribution:**
+
 - Neovim: 0.11.4
-- Plugins: 60 installed
-- LazyVim Extras: 27 enabled
+- Plugins: 59 installed
+- LazyVim Extras: 25 enabled
 - Completion: **blink.cmp** (Rust-based, ultra-fast)
 - Picker: **Snacks picker** (NOT Telescope)
 - File Explorer: **Snacks explorer**
@@ -43,6 +44,7 @@ Aerospace:   5% - Window management
 - AI: Claude Code + GitHub Copilot
 
 **Philosophy:**
+
 - Minimal custom config (only 6 keybinding deletions for Aerospace conflicts)
 - Trust LazyVim defaults
 - Living in Neovim for 95% of workflow
@@ -60,6 +62,7 @@ Aerospace:   5% - Window management
 **Alt+j/k line movement** has been disabled to prevent conflicts with Aerospace window navigation.
 
 **Alternatives:**
+
 - `]e` / `[e` - Move line up/down (LazyVim default)
 - Visual mode + `:m '>+1` or `:m '<-2`
 - `dd` then `p`/`P`
@@ -73,11 +76,13 @@ Your primary navigation methods, ranked by frequency of use.
 #### Primary: Find Files (Snacks Picker)
 
 **`Space Space`** - Find files (fuzzy search)
+
 - Use this 80% of the time
 - Fastest way to open any file
 - Type partial filename, instantly jump
 
 **Quick Workflow:**
+
 ```vim
 1. Space Space      # Open picker
 2. Type filename    # Fuzzy search
@@ -85,6 +90,7 @@ Your primary navigation methods, ranked by frequency of use.
 ```
 
 **Alternative:**
+
 ```vim
 Space ff            # Same as Space Space
 Space fg            # Find git files only
@@ -96,6 +102,7 @@ Space fF            # Find files (cwd instead of root)
 **`Space e`** - Toggle file explorer (root)
 
 Use when you need to:
+
 - See directory structure visually
 - Perform file operations (create, rename, delete)
 - Add multiple files to Claude context
@@ -104,6 +111,7 @@ Use when you need to:
 **Within Explorer:**
 
 **Navigation:**
+
 ```vim
 j/k             # Move up/down
 l or Enter      # Open file / expand folder
@@ -113,6 +121,7 @@ I               # Toggle ignored files (gitignore)
 ```
 
 **File Operations:**
+
 ```vim
 a               # Add new file/folder (end with / for folder)
 d               # Delete file/directory
@@ -123,17 +132,20 @@ p               # Paste
 ```
 
 **Selection:**
+
 ```vim
 v / V           # Visual selection (multi-file)
 Space as        # Add selected files to Claude context
 ```
 
 **Preview:**
+
 ```vim
 P               # Toggle preview window
 ```
 
 **Alternative:**
+
 ```vim
 Space E         # Toggle explorer (cwd instead of root)
 ```
@@ -145,10 +157,61 @@ Space E         # Toggle explorer (cwd instead of root)
 Use for jumping back to recently edited files.
 
 **Alternative:**
+
 ```vim
 Space fR        # Recent files (cwd only)
 Shift+H/L       # Cycle through buffer history
 ```
+
+#### Hidden Files (.env, .gitignore, dotfiles)
+
+**The Issue:** By default, Snacks picker hides dotfiles (files starting
+with `.`) in file searches and grep results. This includes `.env`,
+`.gitignore`, `.zshrc`, etc.
+
+**Why:** Performance optimization and clutter reduction. Most searches
+don't need to scan hidden config files.
+
+**Runtime Toggle (No Config Change Needed):**
+
+```vim
+Alt-h           # Toggle hidden files in picker (Space Space / Space /)
+M-i             # Toggle gitignored files in picker
+H               # Toggle hidden files in explorer (Space e)
+```
+
+**Workflow Example:**
+1. `Space Space` - Open file picker (dotfiles hidden)
+2. `Alt-h` - Toggle to show hidden files
+3. Type `.env` - Now you can see and select it
+4. `Alt-h` again - Hide dotfiles again for normal work
+
+**Permanent Solution (Config):**
+
+If you want hidden files visible by default, create
+`nvim/.config/nvim/lua/plugins/snacks.lua`:
+
+```lua
+return {
+  "folke/snacks.nvim",
+  opts = {
+    picker = {
+      sources = {
+        files = { hidden = true },
+        grep = { hidden = true },
+        explorer = { hidden = true },
+      },
+    },
+  },
+}
+```
+
+**Known Bug:** If a directory contains ONLY hidden files, picker may
+show "No results" even after toggling. This is a known issue in Snacks
+picker (#808).
+
+**Note:** Your `.gitignore` patterns don't affect this behavior. Hidden
+files are filtered separately by the picker itself, not git.
 
 ---
 
@@ -163,6 +226,7 @@ Search across your entire project using Snacks picker.
 Search for text across all files.
 
 **Quick Workflow:**
+
 ```vim
 1. Space /          # Open grep
 2. Type search term
@@ -170,6 +234,7 @@ Search for text across all files.
 ```
 
 **Alternative:**
+
 ```vim
 Space sg            # Grep (root) - same as Space /
 Space sG            # Grep (cwd)
@@ -209,6 +274,7 @@ Navigate and understand code using Language Server Protocol.
 #### Navigation
 
 **Primary:**
+
 ```vim
 gd                  # Go to definition (MOST USED)
 gr                  # Find references
@@ -216,6 +282,7 @@ K                   # Hover documentation
 ```
 
 **Advanced:**
+
 ```vim
 gI                  # Go to implementation
 gy                  # Go to type definition
@@ -228,6 +295,7 @@ gK                  # Signature help
 **`Space ca`** - Code action ⭐⭐⭐
 
 The most important LSP keybinding. Provides context-aware actions:
+
 - Quick fixes for errors
 - Add missing imports
 - Extract to function/variable
@@ -235,6 +303,7 @@ The most important LSP keybinding. Provides context-aware actions:
 - Apply suggestions
 
 **Quick Workflow:**
+
 ```vim
 1. Cursor on error
 2. Space ca         # Open code actions
@@ -257,6 +326,201 @@ Format code blocks inside markdown, etc.
 
 ---
 
+### Vim Motions Mastery
+
+Essential navigation commands for moving efficiently in Neovim. These are
+core Vim motions that work everywhere, not LazyVim-specific.
+
+#### Basic Word & Line Movement
+
+**Word Movement (Most Used):**
+
+```vim
+w                   # Forward to start of next word
+b                   # Backward to start of previous word
+e                   # Forward to end of word
+ge                  # Backward to end of word
+```
+
+**WORD vs word:** Capitalized versions (W/B/E/gE) treat
+whitespace-separated text as single units. Use for faster navigation.
+
+**Line Navigation:**
+
+```vim
+0                   # Beginning of line
+$                   # End of line
+^                   # First non-blank character
+g_                  # Last non-blank character
+```
+
+#### Character Find & Till (f/t Navigation)
+
+**The fastest way to move within a line:**
+
+```vim
+f{char}             # Find next {char} (forward)
+F{char}             # Find previous {char} (backward)
+t{char}             # Till next {char} (stops before)
+T{char}             # Till previous {char} (stops after)
+;                   # Repeat last f/F/t/T (same direction)
+,                   # Repeat last f/F/t/T (opposite direction)
+```
+
+**Example:** `df,` deletes from cursor to next comma (inclusive).
+
+#### Text Object Navigation
+
+```vim
+(  /  )             # Previous/next sentence
+{  /  }             # Previous/next paragraph
+[[  /  ]]           # Previous/next section (or '{' in first column)
+%                   # Jump to matching bracket/brace/paren
+```
+
+#### File Navigation (gg/G)
+
+```vim
+gg                  # Go to first line
+G                   # Go to last line
+{number}gg          # Go to line number (e.g., 42gg)
+{number}G           # Same as above (e.g., 42G)
+```
+
+**Window positions:**
+
+```vim
+H                   # Top of window (High)
+M                   # Middle of window
+L                   # Bottom of window (Low)
+```
+
+#### Scrolling Commands
+
+**Half-Page Scrolling (Most Ergonomic):**
+
+```vim
+Ctrl-d              # Scroll down half screen
+Ctrl-u              # Scroll up half screen
+```
+
+**Full-Page Scrolling:**
+
+```vim
+Ctrl-f              # Scroll forward one full screen
+Ctrl-b              # Scroll backward one full screen
+```
+
+**Line-by-Line (Fine Control):**
+
+```vim
+Ctrl-e              # Scroll screen down one line (cursor stays)
+Ctrl-y              # Scroll screen up one line (cursor stays)
+```
+
+**Screen Repositioning (z-commands):**
+
+```vim
+zt                  # Position current line at top
+zz                  # Position current line at center
+zb                  # Position current line at bottom
+```
+
+**Use case:** After jumping to definition with `gd`, use `zz` to center
+the code on screen.
+
+#### Search Motions
+
+**Basic Search:**
+
+```vim
+/pattern            # Search forward
+?pattern            # Search backward
+n                   # Next result (same direction)
+N                   # Previous result (opposite direction)
+```
+
+**Word Under Cursor (Fast!):**
+
+```vim
+*                   # Search forward for exact word
+#                   # Search backward for exact word
+g*                  # Search forward (partial match)
+g#                  # Search backward (partial match)
+```
+
+**Advanced: Visual Selection of Matches:**
+
+```vim
+gn                  # Select next search match (visual mode)
+gN                  # Select previous search match
+```
+
+**Power combo:** After searching with `*`, use `cgn` to change next
+match, then `.` to repeat on other matches!
+
+#### Marks & Jump List
+
+**Setting Marks:**
+
+```vim
+m{a-z}              # Set local mark (buffer-specific)
+m{A-Z}              # Set global mark (across files)
+```
+
+**Jumping to Marks:**
+
+```vim
+'{mark}             # Jump to line of mark
+`{mark}             # Jump to exact position (line & column)
+:marks              # View all marks
+```
+
+**Jump List Navigation (Critical for Context Switching):**
+
+```vim
+Ctrl-o              # Go to older position in jump list
+Ctrl-i              # Go to newer position in jump list
+:jumps              # View jump list
+```
+
+**Example workflow:**
+1. `gd` to jump to definition (adds to jump list)
+2. Read code
+3. `Ctrl-o` to jump back to where you were
+
+#### Flash Navigation (LazyVim Enhancement)
+
+LazyVim adds Flash.nvim for turbocharged movement:
+
+```vim
+s{char}{char}       # Flash: jump to any visible location
+S                   # Flash treesitter: jump to functions/classes
+```
+
+**Why Flash matters:** Replaces tedious `10j` or repeated `w` with
+precise 2-character jumps. Much faster than counting lines.
+
+#### Enhanced LazyVim Behaviors
+
+**Smart j/k for Wrapped Lines:**
+
+LazyVim maps j/k to use `gj/gk` when no count is provided, making
+navigation through wrapped text more intuitive.
+
+**Auto-Centered Search:**
+
+The `n` and `N` commands auto-center with `zv` and maintain consistent
+direction.
+
+**Window Navigation (Works Everywhere!):**
+
+```vim
+Ctrl-h/j/k/l        # Navigate windows (even in terminal insert mode!)
+```
+
+---
+
 ### Diagnostics & Errors
 
 View and navigate errors/warnings from LSP and linters.
@@ -270,6 +534,7 @@ View and navigate errors/warnings from LSP and linters.
 Opens Trouble.nvim with ALL diagnostics in your workspace. This is your main diagnostics viewer.
 
 **Quick Workflow:**
+
 ```vim
 1. Space xx         # Open Trouble
 2. j/k              # Navigate errors
@@ -320,6 +585,7 @@ All git operations without leaving Neovim.
 LazyGit is your PRIMARY git interface. Handles all git operations in a beautiful TUI.
 
 **Complete Git Workflow:**
+
 ```vim
 1. Make code changes
 2. Space gg         # Open LazyGit
@@ -333,6 +599,7 @@ LazyGit is your PRIMARY git interface. Handles all git operations in a beautiful
 ```
 
 **LazyGit Essential Keys:**
+
 ```
 NAVIGATION
 Tab / Shift+Tab     # Switch sections (Files/Branches/Commits/Stash)
@@ -362,6 +629,7 @@ q                   # Quit LazyGit
 ```
 
 **Alternative:**
+
 ```vim
 Space gG            # LazyGit (cwd instead of root)
 ```
@@ -414,12 +682,46 @@ Use Neovim's integrated Snacks terminal for quick commands. Reserve WezTerm for 
 Opens Snacks terminal in bottom split, auto-enters insert mode.
 
 **Alternative:**
+
 ```vim
 Space ft            # Terminal (root dir)
 Space fT            # Terminal (cwd)
 ```
 
 #### Terminal Navigation
+
+#### Understanding Terminal Modes
+
+Neovim terminals have TWO modes you need to understand:
+
+**Terminal-Insert Mode (Default):**
+
+- This is where you type shell commands
+- You're "inside" the terminal process
+- Even in insert mode, `Ctrl+h/j/k/l` work (LazyVim magic!)
+- But you CANNOT scroll with j/k, search with /, or copy with vim motions
+
+**Terminal-Normal Mode (via Esc Esc):**
+
+- Access all vim powers while viewing terminal output
+- Scroll with `j/k`, `Ctrl+d/u`, `gg/G`
+- Search output with `/pattern`
+- Copy text with visual mode + `y`
+- View and navigate long outputs
+- Press `i` to return to insert mode
+
+**When to Use Terminal-Normal Mode:**
+
+- Reading long test output or logs
+- Copying error messages or stack traces
+- Searching command output with `/`
+- Reviewing previous commands
+- Any time you need vim navigation powers
+
+**Why Double-Tap Esc?**
+
+Single Esc might exit programs running in terminal (vim, less, etc.).
+Double-tap `Esc Esc` is LazyVim's safe pattern to enter normal mode.
 
 **THE POWER MOVE:**
 
@@ -433,6 +735,7 @@ Ctrl+l              # Jump to right window
 ```
 
 **Workflow Example:**
+
 ```vim
 1. Coding in editor
 2. Ctrl+/           # Open terminal (bottom split)
@@ -444,6 +747,7 @@ Ctrl+l              # Jump to right window
 ```
 
 **Exiting Terminal Mode:**
+
 ```vim
 Esc Esc             # Exit to normal mode (double-tap quickly)
 i                   # Re-enter insert mode
@@ -454,6 +758,7 @@ q                   # Hide terminal (when in normal mode)
 #### Use Neovim Terminal vs WezTerm
 
 **Use Neovim Terminal (Ctrl+/):**
+
 - Quick commands (git, npm test, build)
 - LazyGit (Space gg)
 - Test-driven development (watch mode)
@@ -461,6 +766,7 @@ q                   # Hide terminal (when in normal mode)
 - Any command that completes quickly
 
 **Use WezTerm:**
+
 - Long-running servers (npm run dev)
 - Docker containers
 - Log tailing
@@ -482,6 +788,7 @@ Your Slipbox vault at `~/obsidian/Slipbox` integrated with LazyVim.
 Your most used Obsidian command. Opens or creates today's daily note.
 
 **Quick Workflow:**
+
 ```vim
 1. Space ot         # Open today's note
 2. Start journaling
@@ -491,6 +798,7 @@ Your most used Obsidian command. Opens or creates today's daily note.
 ```
 
 **Other Daily Notes:**
+
 ```vim
 Space oy            # Yesterday's daily note
 Space om            # Tomorrow's daily note
@@ -512,6 +820,7 @@ Grep search across all notes in your vault.
 Prompts for title, creates note with slug-ified filename and frontmatter.
 
 **Other Note Operations:**
+
 ```vim
 Space of            # Follow link under cursor
 Space ob            # Show backlinks (notes linking to current note)
@@ -529,21 +838,29 @@ Opens picker to select from templates in `templates/` directory.
 
 Pastes image, saves to `assets/imgs/`, inserts markdown link.
 
+**`Space o-`** - Insert checkbox
+
+Adds checkbox `[ ]` to current line. Works on bullet points or plain lines.
+
 **`Space ox`** - Toggle checkbox
 
-Cycles checkbox states: `[ ]` → `[x]` → `[>]` → `[~]` → back to `[ ]`
+Cycles checkbox states: `[ ]` (TODO) → `[x]` (DONE) → `[>]` (FORWARDED) → `[~]` (CANCELLED) → back to `[ ]`
+
+**Note:** Checkboxes display as readable text labels (TODO, DONE, FORWARDED, CANCELLED) in Neovim while maintaining standard markdown syntax in files.
 
 #### Smart Actions (Markdown Files Only)
 
 **`<CR>` (Enter)** - Smart action
 
 Context-aware action based on cursor position:
+
 - On `[[link]]`: Follow link or create note if doesn't exist
 - On tag: Show all notes with that tag
 - On checkbox: Toggle state
 - On heading: Fold/unfold
 
 **Link Navigation:**
+
 ```vim
 [o / ]o             # Navigate to previous/next link
 ```
@@ -555,7 +872,11 @@ Context-aware action based on cursor position:
 - **Templates**: Daily note template auto-applied
 - **Picker**: Snacks picker for all note navigation
 - **Backlinks**: Full backlink support
-- **Checkboxes**: Beautiful icons (󰄱 ✓  󰰱)
+- **Checkboxes**: 4-state cycle with readable text labels
+  - `[ ]` → TODO (orange)
+  - `[x]` → DONE (cyan)
+  - `[>]` → FORWARDED (orange)
+  - `[~]` → CANCELLED (red)
 
 ---
 
@@ -566,12 +887,14 @@ Navigate between open files (buffers).
 #### Switch Buffers
 
 **Primary:**
+
 ```vim
 Shift+H             # Previous buffer (MUSCLE MEMORY)
 Shift+L             # Next buffer (MUSCLE MEMORY)
 ```
 
 **Alternative:**
+
 ```vim
 Space ,             # Switch buffers (picker)
 Space fb            # Buffer list (picker)
@@ -636,6 +959,7 @@ Your setup uses **blink.cmp** (Rust-based, ultra-fast) with GitHub Copilot integ
 #### Completion Navigation
 
 **In completion menu:**
+
 ```vim
 Tab                 # Accept completion/Copilot suggestion
 Ctrl+n              # Next completion
@@ -656,6 +980,7 @@ Ctrl+e              # Close completion menu
 #### Completion Sources
 
 Your blink.cmp is configured with:
+
 - LSP (language servers)
 - GitHub Copilot (inline suggestions)
 - Path completion
@@ -667,17 +992,139 @@ Your blink.cmp is configured with:
 
 ### Claude Code AI
 
-Claude Code integration for codebase exploration, debugging, and refactoring.
+Claude Code integration for codebase exploration,
+debugging, and refactoring.
+Right split (50% width) - configured in `lua/plugins/claudecode.lua`.
+
+#### Terminal Navigation
+
+**THE KEY INSIGHT:** Even in terminal INSERT mode,
+navigate windows seamlessly:
+
+```vim
+Ctrl+h              # Jump to editor (LEFT - 50% of screen)
+Ctrl+l              # Jump to Claude (RIGHT - 50% of screen)
+Ctrl+j/k            # Jump to windows above/below
+```
+
+**No Esc needed!** Stay in conversation mode while coding.
+
+**Terminal Modes:**
+
+Like all Neovim terminals, Claude terminal supports two modes:
+
+**TERMINAL-INSERT MODE (Default - Stay Here Most of the Time):**
+
+- Type and send messages to Claude
+- `Ctrl+h/l` to jump between editor and Claude
+- No Esc needed for window navigation
+- **Primary workflow:** Stay in insert mode, use Ctrl+h/l to navigate
+
+**TERMINAL-NORMAL MODE (For Reading Long Responses):**
+
+- Scroll through long Claude responses (`j/k`, `Ctrl+d/u`)
+- Search Claude's output with `/pattern`
+- Copy code snippets with visual mode + `y`
+- Review conversation history
+- Press `i` to return to insert mode
+
+**Why This Matters for Claude:**
+
+Claude gives LONG responses. Terminal-normal mode lets you:
+
+- Scroll without mouse
+- Search for specific keywords in responses
+- Copy code blocks to paste elsewhere
+- Review previous answers
+
+**CRITICAL: Esc Esc Interruption Bug**
+
+**Issue:** There's a known bug (anthropics/claude-code#39) where `Esc Esc`
+can interrupt Claude's active tasks or cancel operations. This conflicts
+with LazyVim's default terminal normal mode escape pattern.
+
+**Best Practice - Avoid the Problem Entirely:**
+
+```vim
+# Primary workflow (90% of the time):
+1. Stay in INSERT mode while talking to Claude
+2. Use Ctrl+h to jump back to editor (no Esc!)
+3. Use Ctrl+l to jump back to Claude
+4. Only enter normal mode when you MUST read/copy long output
+```
+
+**When You MUST Enter Normal Mode:**
+
+**Option 1: Use Ctrl-n (Recommended - Configured in Setup)**
+
+```vim
+Ctrl+n              # Safe normal mode entry (won't interrupt Claude)
+i                   # Return to insert mode
+```
+
+This keybinding is configured in your `claudecode.lua` and won't
+interrupt Claude's tasks.
+
+**Option 2: Use Esc Esc with Caution**
+
+```vim
+Esc Esc             # Default LazyVim escape (may interrupt tasks!)
+i                   # Return to insert mode
+```
+
+Only use if Claude is idle and you need to scroll/search output.
+
+**Terminal Control:**
+
+```vim
+Ctrl+n              # Enter normal mode (SAFE - won't interrupt)
+Esc Esc             # Enter normal mode (CAUTION - may interrupt)
+i                   # Return to insert mode
+Space ac            # Toggle Claude terminal (hide/show)
+q                   # Close terminal (when in normal mode)
+```
+
+#### Inside Claude Terminal
+
+**Slash Commands:**
+
+```vim
+/help               # Show all available commands
+/model              # Switch Claude model (Sonnet/Opus/Haiku)
+/init               # Create CLAUDE.md (project context file)
+/rewind             # Undo changes (cancel current operation)
+/review             # Code review mode with bug spotting
+```
+
+**Navigation:**
+
+```vim
+Ctrl+r              # Search command history
+Up/Down arrows      # Browse command history
+```
+
+#### Automatic Context Awareness
+
+Claude automatically sees (no manual add needed):
+
+- Current file you're editing
+- Text selections in real-time
+- Open buffers in workspace
+- Diagnostics and errors
+- Workspace folder structure
+
+**This is why Neovim integration beats a separate terminal!**
 
 #### Primary Commands
 
 **`Space ac`** - Toggle Claude Code terminal
 
-Opens Claude Code in Neovim terminal. Claude automatically sees your current file.
+Opens Claude in right split (50% width).
+Claude automatically sees your current file.
 
 **`Space ab`** - Add current buffer to Claude
 
-Adds the file you're currently editing to Claude's context.
+Explicitly adds the file you're editing to Claude's context.
 
 **`Space as`** - Send selection to Claude (visual mode)
 
@@ -704,14 +1151,17 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 
 #### Claude Code Workflows
 
-**Workflow 1: Quick Question**
+##### Workflow 1: Quick Question
+
 ```vim
-1. Space ac         # Open Claude
+1. Space ac         # Open Claude (right 50%)
 2. Ask question     # Claude sees current file automatically
 3. Claude responds
+4. Ctrl+h           # Back to editor (no app switching!)
 ```
 
-**Workflow 2: Code Review/Refactor**
+##### Workflow 2: Code Review/Refactor
+
 ```vim
 1. Visual select code
 2. Space as         # Send to Claude
@@ -719,16 +1169,19 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 4. Space aa         # Accept changes (or Space ad to reject)
 ```
 
-**Workflow 3: Add Multiple Files**
+##### Workflow 3: Add Multiple Files
+
 ```vim
 1. Space e          # Open explorer
 2. V on directory   # Select files
 3. Space as         # Add to Claude context
-4. Space ac         # Open Claude
+4. Ctrl+l           # Jump to Claude terminal
 5. Ask about codebase
+6. Claude opens files in your editor!
 ```
 
-**Workflow 4: Debugging**
+##### Workflow 4: Debugging
+
 ```vim
 1. Hit error
 2. Space ab         # Add current buffer
@@ -736,6 +1189,51 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 4. Space ac         # Ask "Why is this failing?"
 5. Claude analyzes
 ```
+
+##### Workflow 5: Multi-File Context
+
+```vim
+1. Space e          # Open file explorer
+2. V on directory   # Visual select files
+3. Space as         # Add all to Claude context
+4. Ctrl+l           # Jump to Claude terminal
+5. Ask about architecture
+6. Ctrl+h           # Back to editor
+7. Claude opens files directly!
+```
+
+##### Workflow 6: Pair Programming Flow
+
+```vim
+1. Space ac         # Open Claude (right 50%)
+2. Ctrl+h           # Back to editor (left 50%)
+3. Write code
+4. Ctrl+l           # Ask Claude for review
+5. Ctrl+h           # Fix issues
+6. Ctrl+l           # Continue conversation
+# No app switching - pure flow state!
+```
+
+#### Why Neovim Integration vs Separate Terminal?
+
+**Old flow (WezTerm tab):**
+
+- Context switch between apps (Cmd+Tab)
+- Manual file management
+- Copy/paste diffs manually
+- Lost context when switching
+
+**New flow (Neovim split):**
+
+- ✅ Stay in Neovim 100%
+- ✅ Automatic file context
+- ✅ Real-time selection awareness
+- ✅ Native diff viewer (`Space aa`/`Space ad`)
+- ✅ `Ctrl+h`/`Ctrl+l` navigation (no Esc!)
+- ✅ Session persists layout
+
+**Configuration:** Right split, 50% width
+**Location:** `lua/plugins/claudecode.lua`
 
 ---
 
@@ -763,15 +1261,18 @@ Space uh            # Toggle inlay hints
 
 **`s{char}{char}`** - Flash jump
 
-Jump to any visible location by typing 2 characters. Replaces using arrow keys or `10j`.
+Jump to any visible location by typing 2 characters.
+Replaces using arrow keys or `10j`.
 
 **Example:**
+
 ```vim
 s fo                # Jump to next "fo"
 s th                # Jump to next "th"
 ```
 
 **Other Flash Commands:**
+
 ```vim
 S                   # Flash treesitter (jump to functions/classes)
 r                   # Remote flash (operator-pending mode)
@@ -831,7 +1332,7 @@ gP                  # Paste before and leave cursor
 
 Highlight and navigate TODO/FIXME/HACK comments.
 
-#### Navigation
+#### Todo Navigation
 
 ```vim
 ]t                  # Next todo comment
@@ -849,7 +1350,7 @@ Space xT            # TODO/FIX/FIXME only (Trouble)
 
 #### Supported Keywords
 
-```
+```text
 TODO: Description
 FIXME: Description
 HACK: Description
@@ -944,11 +1445,13 @@ Space qq            # Quit all (auto-saves session)
 #### How Sessions Work
 
 **Automatic:**
+
 - Sessions auto-save when you quit (`:qa`, `Space qq`)
 - Each directory gets its own session
 - Dashboard shows "Restore Session" option (press `s`)
 
 **What Gets Saved:**
+
 - All open buffers
 - Window layout (splits)
 - Cursor positions
@@ -956,12 +1459,14 @@ Space qq            # Quit all (auto-saves session)
 - Marks and jumps
 
 **What Doesn't Get Saved:**
+
 - Terminal processes (terminals reopen empty)
 - File explorer state
 - Unsaved changes (save first!)
 - Claude Code conversations
 
 **Workflow:**
+
 ```vim
 Morning:
 nvim                # Open in project directory
@@ -983,6 +1488,7 @@ Ctrl+x              # Decrement: numbers, dates, booleans, hex colors
 ```
 
 **Works on:**
+
 - Numbers: `42` → `43`
 - Dates: `2025-11-10` → `2025-11-11`
 - Booleans: `true` → `false`
@@ -995,6 +1501,7 @@ Ctrl+x              # Decrement: numbers, dates, booleans, hex colors
 **Press `Space` and wait 1 second** - Interactive keymap menu appears!
 
 Explore keybindings without memorizing everything:
+
 - `Space c` → See all code actions
 - `Space s` → See all search options
 - `Space g` → See all git commands
@@ -1013,6 +1520,7 @@ Essential for finding forgotten keybindings!
 **`Space D`** or **`:DBUI`** - Database UI
 
 Open vim-dadbod database client:
+
 - Connect to databases
 - Run SQL queries
 - See results in Neovim
@@ -1023,6 +1531,7 @@ Open vim-dadbod database client:
 **`Space R`** - REST API testing (Kulala)
 
 HTTP client like Postman, in Neovim:
+
 - Create `.http` files
 - Execute requests
 - View responses
@@ -1065,13 +1574,14 @@ Space .             # Repeat last command
 
 ## 2. WezTerm Terminal Multiplexer
 
-WezTerm is for **long-running servers only**. Use Neovim terminal (Ctrl+/) for everything else.
+WezTerm is for **long-running servers only**.
+Use Neovim terminal (Ctrl+/) for everything else.
 
-### Leader Key
+### WezTerm Leader Key
 
 **`Ctrl+a`** (1 second timeout)
 
-### Essential Keymaps
+### WezTerm Essential Keymaps
 
 ```vim
 Ctrl+a → s          # Split pane vertically
@@ -1106,13 +1616,14 @@ Ctrl+0              # Reset font size
 
 ## 3. Aerospace Window Manager
 
-Aerospace handles system-level window management (i3-like tiling for macOS).
+Aerospace handles system-level window management
+(i3-like tiling for macOS).
 
-### Mod Key
+### Aerospace Mod Key
 
 **`Alt`** (Option key)
 
-### Essential Keymaps
+### Aerospace Essential Keymaps
 
 ```vim
 Alt+h/j/k/l         # Focus window (vim-style)
@@ -1256,9 +1767,18 @@ Space               # Wait 1 second (Which-Key popup)
 ### "Terminal not responding?"
 
 ```vim
-Esc Esc             # Exit terminal mode (double-tap)
+Esc Esc             # Enter normal mode (scroll/search/copy)
+i                   # Enter insert mode (type commands)
 Ctrl+/              # Toggle terminal (hide/show)
 ```
+
+**Understanding terminal modes:**
+
+- **Insert mode** (default): Type commands, send to shell
+- **Normal mode** (`Esc Esc`): Vim navigation, search, copy
+- `Ctrl+h/j/k/l` work in BOTH modes for window navigation
+
+If keys aren't working as expected, check which mode you're in!
 
 ### "Lost my yanked text?"
 
@@ -1286,9 +1806,10 @@ Space qS            # Choose from session list
 ## Summary Statistics
 
 **Your Complete Setup:**
+
 - **Neovim**: 0.11.4 with LazyVim
-- **Plugins**: 60 installed
-- **LazyVim Extras**: 27 enabled
+- **Plugins**: 59 installed
+- **LazyVim Extras**: 25 enabled
 - **Completion**: blink.cmp (Rust-based, ultra-fast)
 - **Picker**: Snacks picker (NOT Telescope)
 - **File Explorer**: Snacks explorer
@@ -1298,15 +1819,18 @@ Space qS            # Choose from session list
 - **Notes**: Obsidian.nvim (Slipbox vault)
 
 **Workflow Distribution:**
+
 - **Neovim**: 95% (code, files, git, terminal, Claude, notes)
 - **WezTerm**: 5% (dev servers only)
 
 **Philosophy:**
+
 - Minimal custom config (6 keybinding deletions)
 - Trust LazyVim defaults
 - Living in Neovim for everything
 
 **Power Features:**
+
 - Snacks suite (picker, explorer, terminal, dashboard)
 - blink.cmp completion (ultra-fast)
 - Claude Code integration (codebase exploration)
@@ -1327,4 +1851,6 @@ All managed via GNU Stow from `~/dotfiles`.
 
 ---
 
-**Built with:** LazyVim (60 plugins, 27 extras), Snacks.nvim suite, blink.cmp, Claude Code, Obsidian.nvim, WezTerm, Aerospace, and Tokyo Night.
+**Built with:** LazyVim (60 plugins, 27 extras), Snacks.nvim suite,
+blink.cmp, Claude Code, Obsidian.nvim, WezTerm, Aerospace,
+and Tokyo Night.

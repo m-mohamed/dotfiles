@@ -375,11 +375,45 @@ migrate_history
 INSTALL_STATE+=("History migrated")
 
 # ══════════════════════════════════════════════════════════════════════
-# 7. Install bat Tokyo Night Theme (Optional)
+# 7. Setup brew-autoupdate for Automated Maintenance
 # ══════════════════════════════════════════════════════════════════════
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}  Step 7: Installing bat Tokyo Night Theme (Optional)${NC}"
+echo -e "${CYAN}  Step 7: Setting Up Automated Homebrew Updates${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+if brew tap | grep -q "domt4/autoupdate"; then
+  echo -e "${GREEN}✓ brew-autoupdate already tapped${NC}"
+else
+  echo "Tapping DomT4/homebrew-autoupdate..."
+  if brew tap DomT4/homebrew-autoupdate 2>&1; then
+    echo -e "${GREEN}✓ brew-autoupdate tapped${NC}"
+  else
+    warn "Could not tap brew-autoupdate (non-critical)"
+  fi
+fi
+
+# Check if autoupdate is already running
+if brew autoupdate status 2>&1 | grep -q "running"; then
+  echo -e "${GREEN}✓ brew-autoupdate already configured${NC}"
+else
+  echo "Configuring brew-autoupdate (daily updates + cleanup)..."
+  if brew autoupdate start --upgrade --cleanup 2>&1; then
+    echo -e "${GREEN}✓ brew-autoupdate configured${NC}"
+    echo "  Homebrew will auto-update daily via macOS launchd"
+  else
+    warn "Could not configure brew-autoupdate (non-critical, you can do it manually)"
+  fi
+fi
+
+INSTALL_STATE+=("brew-autoupdate configured")
+
+# ══════════════════════════════════════════════════════════════════════
+# 8. Install bat Tokyo Night Theme (Optional)
+# ══════════════════════════════════════════════════════════════════════
+echo ""
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${CYAN}  Step 8: Installing bat Tokyo Night Theme (Optional)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 if command -v bat &>/dev/null; then
@@ -407,7 +441,7 @@ else
 fi
 
 # ══════════════════════════════════════════════════════════════════════
-# 8. Success Message
+# 9. Success Message
 # ══════════════════════════════════════════════════════════════════════
 echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -424,9 +458,19 @@ echo "  1. Restart your terminal or run: ${YELLOW}exec zsh${NC}"
 echo "  2. Antidote will auto-install plugins on first shell start"
 echo "  3. Test startup time: ${YELLOW}time zsh -i -c exit${NC}"
 echo ""
+echo -e "${CYAN}Automated Maintenance (brew-autoupdate):${NC}"
+echo "  ${YELLOW}brew autoupdate status${NC}     # Check autoupdate status"
+echo "  Homebrew auto-updates daily at $(date +%H:%M) via macOS launchd"
+echo "  Packages in Brewfile are kept up-to-date automatically"
+echo ""
 echo -e "${CYAN}Verify Installation:${NC}"
 echo "  ${YELLOW}antidote list${NC}          # Check plugins"
 echo "  ${YELLOW}eza --version${NC}          # Modern ls"
 echo "  ${YELLOW}bat --version${NC}          # Syntax cat"
 echo "  ${YELLOW}fzf --version${NC}          # Fuzzy finder"
+echo ""
+echo -e "${CYAN}Brewfile-First Workflow:${NC}"
+echo "  Always add packages to Brewfile first, then: ${YELLOW}brew bundle install${NC}"
+echo "  Monthly cleanup: ${YELLOW}brew bundle cleanup --force${NC}"
+echo "  See ${YELLOW}docs/GUIDE.md${NC} for detailed workflow documentation"
 echo ""
