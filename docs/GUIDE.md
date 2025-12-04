@@ -869,7 +869,6 @@ API keys in dotfiles → commit to Git → exposed on GitHub → compromised.
 ```bash
 # File: zsh/.config/zsh/modules/00-env-secrets.zsh.example
 export OPENAI_API_KEY="sk-..."
-export ANTHROPIC_API_KEY="sk-ant-..."
 export DEEPSEEK_API_KEY="..."
 ```
 
@@ -884,6 +883,8 @@ nvim 00-env-secrets.zsh
 # 3. File is gitignored
 # .gitignore contains: **/*-secrets.zsh
 ```
+
+**Note:** Leave `ANTHROPIC_API_KEY` unset to keep Claude Code on the Max plan (setting it forces API billing).
 
 **Why this works:**
 - Template provides documentation (what keys needed)

@@ -1603,13 +1603,14 @@ cd ~/nix-config/secrets
 # Create
 cat > secrets.yaml << 'EOF'
 openai_api_key: sk-your-key
-anthropic_api_key: sk-ant-your-key
 EOF
 
 # Encrypt
 nix shell nixpkgs#sops -c sops -e secrets.yaml > secrets.yaml.enc
 mv secrets.yaml.enc secrets.yaml
 ```
+
+> Note: Do not add `anthropic_api_key` here—leaving `ANTHROPIC_API_KEY` unset keeps Claude Code on the Max plan instead of billing the API.
 
 ### Configure in Home Manager
 
@@ -1624,9 +1625,6 @@ sops = {
     openai_api_key = {
       path = "${config.home.homeDirectory}/.secrets/openai";
     };
-    anthropic_api_key = {
-      path = "${config.home.homeDirectory}/.secrets/anthropic";
-    };
   };
 };
 ```
@@ -1639,7 +1637,6 @@ programs.zsh = {
 
   initExtra = ''
     export OPENAI_API_KEY="$(cat ~/.secrets/openai 2>/dev/null || echo "")"
-    export ANTHROPIC_API_KEY="$(cat ~/.secrets/anthropic 2>/dev/null || echo "")"
   '';
 };
 ```
