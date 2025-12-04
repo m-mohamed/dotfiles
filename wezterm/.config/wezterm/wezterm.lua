@@ -33,10 +33,8 @@ config.window_padding = {
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Leader Key (Ctrl+a) - Screen/Tmux Standard                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
--- Using Ctrl+a instead of Ctrl+g for better ergonomics and industry standard
--- Ctrl+a: Home row adjacent, no conflict with Neovim's Ctrl+g (show file position)
--- Matches GNU Screen (1987) and tmux convention
-config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
+-- Bump timeout to make slower key chords reliable (press Ctrl+a, then the key)
+config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 2000 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Tab Bar Settings                                                     ║
