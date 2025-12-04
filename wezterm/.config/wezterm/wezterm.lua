@@ -33,8 +33,7 @@ config.window_padding = {
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Leader Key (Ctrl+a) - Screen/Tmux Standard                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
--- Bump timeout to make slower key chords reliable (press Ctrl+a, then the key)
-config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 2000 }
+config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Tab Bar Settings                                                     ║
