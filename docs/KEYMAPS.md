@@ -13,7 +13,6 @@ Your complete guide to living in LazyVim, complemented by WezTerm and Aerospace.
 
 ```
 LazyVim:     Space Space / gd / K / Space ca / Shift+H/L / Ctrl+/
-Claude AI:   Space ac / Space ab / Space as / Space aa/ad
 Obsidian:    Space ot / Space oo / Space os
 WezTerm:     Ctrl+a → s/v/h/j/k/l/q/z
 Aerospace:   Alt+h/j/k/l / Alt+b/t/d
@@ -41,7 +40,6 @@ Aerospace:   5% - Window management
 - File Explorer: **Snacks explorer**
 - Terminal: **Snacks terminal**
 - Theme: Tokyo Night (night variant)
-- AI: Claude Code + GitHub Copilot
 
 **Philosophy:**
 
@@ -105,7 +103,6 @@ Use when you need to:
 
 - See directory structure visually
 - Perform file operations (create, rename, delete)
-- Add multiple files to Claude context
 - See git status markers
 
 **Within Explorer:**
@@ -135,7 +132,6 @@ p               # Paste
 
 ```vim
 v / V           # Visual selection (multi-file)
-Space as        # Add selected files to Claude context
 ```
 
 **Preview:**
@@ -990,11 +986,8 @@ Your blink.cmp is configured with:
 
 ---
 
-### Claude Code AI
 
-Claude Code integration for codebase exploration,
 debugging, and refactoring.
-Right split (50% width) - configured in `lua/plugins/claudecode.lua`.
 
 #### Terminal Navigation
 
@@ -1003,7 +996,6 @@ navigate windows seamlessly:
 
 ```vim
 Ctrl+h              # Jump to editor (LEFT - 50% of screen)
-Ctrl+l              # Jump to Claude (RIGHT - 50% of screen)
 Ctrl+j/k            # Jump to windows above/below
 ```
 
@@ -1011,26 +1003,19 @@ Ctrl+j/k            # Jump to windows above/below
 
 **Terminal Modes:**
 
-Like all Neovim terminals, Claude terminal supports two modes:
 
 **TERMINAL-INSERT MODE (Default - Stay Here Most of the Time):**
 
-- Type and send messages to Claude
-- `Ctrl+h/l` to jump between editor and Claude
 - No Esc needed for window navigation
 - **Primary workflow:** Stay in insert mode, use Ctrl+h/l to navigate
 
 **TERMINAL-NORMAL MODE (For Reading Long Responses):**
 
-- Scroll through long Claude responses (`j/k`, `Ctrl+d/u`)
-- Search Claude's output with `/pattern`
 - Copy code snippets with visual mode + `y`
 - Review conversation history
 - Press `i` to return to insert mode
 
-**Why This Matters for Claude:**
 
-Claude gives LONG responses. Terminal-normal mode lets you:
 
 - Scroll without mouse
 - Search for specific keywords in responses
@@ -1039,17 +1024,13 @@ Claude gives LONG responses. Terminal-normal mode lets you:
 
 **CRITICAL: Esc Esc Interruption Bug**
 
-**Issue:** There's a known bug (anthropics/claude-code#39) where `Esc Esc`
-can interrupt Claude's active tasks or cancel operations. This conflicts
 with LazyVim's default terminal normal mode escape pattern.
 
 **Best Practice - Avoid the Problem Entirely:**
 
 ```vim
 # Primary workflow (90% of the time):
-1. Stay in INSERT mode while talking to Claude
 2. Use Ctrl+h to jump back to editor (no Esc!)
-3. Use Ctrl+l to jump back to Claude
 4. Only enter normal mode when you MUST read/copy long output
 ```
 
@@ -1058,12 +1039,9 @@ with LazyVim's default terminal normal mode escape pattern.
 **Option 1: Use Ctrl-n (Recommended - Configured in Setup)**
 
 ```vim
-Ctrl+n              # Safe normal mode entry (won't interrupt Claude)
 i                   # Return to insert mode
 ```
 
-This keybinding is configured in your `claudecode.lua` and won't
-interrupt Claude's tasks.
 
 **Option 2: Use Esc Esc with Caution**
 
@@ -1072,7 +1050,6 @@ Esc Esc             # Default LazyVim escape (may interrupt tasks!)
 i                   # Return to insert mode
 ```
 
-Only use if Claude is idle and you need to scroll/search output.
 
 **Terminal Control:**
 
@@ -1080,18 +1057,14 @@ Only use if Claude is idle and you need to scroll/search output.
 Ctrl+n              # Enter normal mode (SAFE - won't interrupt)
 Esc Esc             # Enter normal mode (CAUTION - may interrupt)
 i                   # Return to insert mode
-Space ac            # Toggle Claude terminal (hide/show)
 q                   # Close terminal (when in normal mode)
 ```
 
-#### Inside Claude Terminal
 
 **Slash Commands:**
 
 ```vim
 /help               # Show all available commands
-/model              # Switch Claude model (Sonnet/Opus/Haiku)
-/init               # Create CLAUDE.md (project context file)
 /rewind             # Undo changes (cancel current operation)
 /review             # Code review mode with bug spotting
 ```
@@ -1105,7 +1078,6 @@ Up/Down arrows      # Browse command history
 
 #### Automatic Context Awareness
 
-Claude automatically sees (no manual add needed):
 
 - Current file you're editing
 - Text selections in real-time
@@ -1117,46 +1089,29 @@ Claude automatically sees (no manual add needed):
 
 #### Primary Commands
 
-**`Space ac`** - Toggle Claude Code terminal
 
-Opens Claude in right split (50% width).
-Claude automatically sees your current file.
 
-**`Space ab`** - Add current buffer to Claude
 
-Explicitly adds the file you're editing to Claude's context.
 
-**`Space as`** - Send selection to Claude (visual mode)
 
-Select code in visual mode, press `Space as` to send to Claude.
 
 #### Diff Management
 
 **`Space aa`** - Accept diff
 
-Accepts Claude's proposed changes.
 
 **`Space ad`** - Deny diff
 
-Rejects Claude's proposed changes.
 
-#### Other Claude Commands
 
 ```vim
-Space af            # Focus Claude terminal
-Space ar            # Resume Claude session
-Space aC            # Continue Claude (from last message)
 Space am            # Select model (Sonnet/Opus/Haiku)
 ```
 
-#### Claude Code Workflows
 
 ##### Workflow 1: Quick Question
 
 ```vim
-1. Space ac         # Open Claude (right 50%)
-2. Ask question     # Claude sees current file automatically
-3. Claude responds
 4. Ctrl+h           # Back to editor (no app switching!)
 ```
 
@@ -1164,7 +1119,6 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 
 ```vim
 1. Visual select code
-2. Space as         # Send to Claude
 3. Ask to review/refactor
 4. Space aa         # Accept changes (or Space ad to reject)
 ```
@@ -1174,10 +1128,7 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 ```vim
 1. Space e          # Open explorer
 2. V on directory   # Select files
-3. Space as         # Add to Claude context
-4. Ctrl+l           # Jump to Claude terminal
 5. Ask about codebase
-6. Claude opens files in your editor!
 ```
 
 ##### Workflow 4: Debugging
@@ -1187,7 +1138,6 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 2. Space ab         # Add current buffer
 3. Space as         # Send stack trace (visual selection)
 4. Space ac         # Ask "Why is this failing?"
-5. Claude analyzes
 ```
 
 ##### Workflow 5: Multi-File Context
@@ -1195,20 +1145,15 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 ```vim
 1. Space e          # Open file explorer
 2. V on directory   # Visual select files
-3. Space as         # Add all to Claude context
-4. Ctrl+l           # Jump to Claude terminal
 5. Ask about architecture
 6. Ctrl+h           # Back to editor
-7. Claude opens files directly!
 ```
 
 ##### Workflow 6: Pair Programming Flow
 
 ```vim
-1. Space ac         # Open Claude (right 50%)
 2. Ctrl+h           # Back to editor (left 50%)
 3. Write code
-4. Ctrl+l           # Ask Claude for review
 5. Ctrl+h           # Fix issues
 6. Ctrl+l           # Continue conversation
 # No app switching - pure flow state!
@@ -1233,7 +1178,6 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 - ✅ Session persists layout
 
 **Configuration:** Right split, 50% width
-**Location:** `lua/plugins/claudecode.lua`
 
 ---
 
@@ -1463,7 +1407,6 @@ Space qq            # Quit all (auto-saves session)
 - Terminal processes (terminals reopen empty)
 - File explorer state
 - Unsaved changes (save first!)
-- Claude Code conversations
 
 **Workflow:**
 
@@ -1704,9 +1647,6 @@ Space gg            # LazyGit for git
 1. nvim .           # Open project
 2. Space e          # File explorer
 3. V on directory   # Select files
-4. Space as         # Add to Claude
-5. Space ac         # Ask Claude to explain
-6. Space Space      # Open files Claude mentions
 7. gd / gr          # Navigate with LSP
 ```
 
@@ -1787,10 +1727,8 @@ Space p             # Yank history (picker)
 ]p / [p             # Cycle yank history
 ```
 
-### "Claude not connecting?"
 
 ```vim
-:ClaudeCodeStatus   # Check connection
 :messages           # View logs
 ```
 
@@ -1814,13 +1752,11 @@ Space qS            # Choose from session list
 - **Picker**: Snacks picker (NOT Telescope)
 - **File Explorer**: Snacks explorer
 - **Terminal**: Snacks terminal
-- **AI**: Claude Code + GitHub Copilot
 - **Theme**: Tokyo Night (night variant)
 - **Notes**: Obsidian.nvim (Slipbox vault)
 
 **Workflow Distribution:**
 
-- **Neovim**: 95% (code, files, git, terminal, Claude, notes)
 - **WezTerm**: 5% (dev servers only)
 
 **Philosophy:**
@@ -1833,7 +1769,6 @@ Space qS            # Choose from session list
 
 - Snacks suite (picker, explorer, terminal, dashboard)
 - blink.cmp completion (ultra-fast)
-- Claude Code integration (codebase exploration)
 - Obsidian.nvim (daily notes)
 - LazyGit in Neovim (complete git workflow)
 - Session persistence (instant context restoration)
@@ -1852,5 +1787,4 @@ All managed via GNU Stow from `~/dotfiles`.
 ---
 
 **Built with:** LazyVim (60 plugins, 27 extras), Snacks.nvim suite,
-blink.cmp, Claude Code, Obsidian.nvim, WezTerm, Aerospace,
 and Tokyo Night.

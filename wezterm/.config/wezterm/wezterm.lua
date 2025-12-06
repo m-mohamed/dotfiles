@@ -192,12 +192,16 @@ end)
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Key Bindings                                                         ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-config.keys = {
-	-- Basic operations
+config.keys = {-- Basic operations
 	{
 		key = "c",
 		mods = "CMD",
 		action = act.CopyTo("Clipboard"),
+	},
+	{
+		key = "Enter",
+		mods = "SHIFT",
+		action = wezterm.action({ SendString = "\x1b\r" }),
 	},
 	{
 		key = "v",
