@@ -31,6 +31,34 @@ exec zsh
 - 🎯 **Syntax highlighting** - Color-coded commands
 - 🔍 **Fuzzy search** - fzf integration (Ctrl+R, Ctrl+T, Alt+C)
 
+## Multi-Agent Workflow
+
+This setup supports running multiple Claude Code instances across WezTerm workspaces.
+
+### Desktop (WezTerm)
+
+- Multiple workspaces with Claude Code + Neovim tabs in each
+- Tab titles show agent state: 🤖 running, ✅ done, 🔔 waiting
+- Status bar shows agent summary: `🤖2 🔔1 ✅1`
+- Notifications via terminal-notifier when agents complete
+- Click notification → jumps to correct pane
+
+### Mobile (Tailscale + Termius + tmux)
+
+- SSH via Tailscale VPN (works on cellular)
+- tmux sessions per project (WezTerm GUI doesn't work over SSH)
+- Aliases: `mc`, `tn`, `ta`, `tl`, `tk`, `ts`
+
+```bash
+# From iPhone via Termius
+tn fantasy           # New session for project
+cd ~/fantasy-agent && claude
+# Ctrl+a d to detach
+
+ta fantasy           # Reattach later
+tl                   # List sessions
+```
+
 ## Design Decisions & Opinions
 
 ⚠️ **This repo makes opinionated choices that may not match your preferences:**

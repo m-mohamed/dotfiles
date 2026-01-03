@@ -149,6 +149,51 @@ config.visual_bell = {
 	fade_out_duration_ms = 150,
 }
 
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║ Notification Handling for Multi-Agent Workflow                       ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+-- Always show OSC 777 notifications (even when window is focused)
+config.notification_handling = "AlwaysShow"
+
+-- Bell event handler - convert terminal bells to toast notifications for Claude
+wezterm.on("bell", function(window, pane)
+	local process = pane:get_foreground_process_name() or ""
+	if process:match("claude") then
+		window:toast_notification("Claude Code", "Agent ready for input", nil, 4000)
+	end
+end)
+
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║ Multi-Agent Tab Title Formatting                                     ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+-- Helper to get basename from path
+local function basename(s)
+	return string.gsub(s, "(.*[/\\])(.*)", "%2")
+end
+
+-- Show agent state icons in tab titles
+wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
+	local pane = tab.active_pane
+	local user_vars = pane.user_vars or {}
+	local claude_status = user_vars.claude_status
+	local process = basename(pane.foreground_process_name or "")
+
+	-- State-based icons (priority: user_var status > process detection)
+	local icon = ""
+	if claude_status == "done" then
+		icon = "✅ "
+	elseif claude_status == "waiting" then
+		icon = "🔔 "
+	elseif process:match("claude") then
+		icon = "🤖 "
+	elseif process:match("nvim") then
+		icon = " "
+	end
+
+	local title = tab.tab_title ~= "" and tab.tab_title or pane.title
+	return icon .. title
+end)
+
 -- Cursor settings - steady, no blinking
 config.default_cursor_style = "SteadyBlock"
 config.cursor_blink_rate = 0
@@ -170,9 +215,32 @@ config.quick_select_patterns = {
 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║ Status Bar - Show Workspace & Process                                ║
+-- ║ Status Bar - Show Agent Summary, Workspace & Process                 ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 wezterm.on("update-right-status", function(window, _)
+	-- Count Claude agents by state across all panes
+	local running, waiting, done = 0, 0, 0
+	for _, tab in ipairs(window:mux_window():tabs()) do
+		for _, p in ipairs(tab:panes()) do
+			local vars = p:get_user_vars() or {}
+			local status = vars.claude_status
+			local proc = p:get_foreground_process_name() or ""
+
+			if status == "waiting" then
+				waiting = waiting + 1
+			elseif status == "done" then
+				done = done + 1
+			elseif proc:match("claude") then
+				running = running + 1
+			end
+		end
+	end
+
+	local agent_summary = ""
+	if running + waiting + done > 0 then
+		agent_summary = string.format("🤖%d 🔔%d ✅%d | ", running, waiting, done)
+	end
+
 	local process_name = window:active_pane():get_foreground_process_name() or ""
 	process_name = process_name:gsub("%.exe$", "")
 
@@ -183,11 +251,10 @@ wezterm.on("update-right-status", function(window, _)
 		workspace = "[" .. workspace .. "] | "
 	end
 
-	-- Fixed: Use proper domain name API
 	local domain_name = window:active_pane():get_domain_name() or "local"
 	local domain = "[" .. domain_name .. "] | "
 
-	window:set_right_status(domain .. workspace .. leader_active .. process_name)
+	window:set_right_status(agent_summary .. domain .. workspace .. leader_active .. process_name)
 end)
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
