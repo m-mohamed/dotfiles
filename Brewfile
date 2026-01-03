@@ -56,6 +56,8 @@ brew "wget"                      # Internet file retriever
 # System Utilities
 # ══════════════════════════════════════════════════════════════════════
 brew "mole"                      # Deep clean and optimize Mac (cache, logs, apps)
+brew "terminal-notifier"         # macOS notifications from terminal (Claude Code hooks)
+brew "tailscale"                 # Private network for remote access to Mac
 
 # ══════════════════════════════════════════════════════════════════════
 # Development Tools
@@ -82,6 +84,7 @@ cask "telegram"                  # Messaging app
 cask "zoom"                      # Video conferencing
 cask "keycastr"                  # Keystroke visualizer for screencasts
 cask "ngrok"                     # Secure tunnels to localhost
+cask "termius"                   # SSH client (pairs with Tailscale for mobile access)
 
 # ══════════════════════════════════════════════════════════════════════
 # Fonts

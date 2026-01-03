@@ -149,6 +149,20 @@ config.visual_bell = {
 	fade_out_duration_ms = 150,
 }
 
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║ Notification Handling for Multi-Agent Workflow                       ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+-- Always show OSC 777 notifications (even when window is focused)
+config.notification_handling = "AlwaysShow"
+
+-- Bell event handler - convert terminal bells to toast notifications for Claude
+wezterm.on("bell", function(window, pane)
+	local process = pane:get_foreground_process_name() or ""
+	if process:match("claude") then
+		window:toast_notification("Claude Code", "Agent ready for input", nil, 4000)
+	end
+end)
+
 -- Cursor settings - steady, no blinking
 config.default_cursor_style = "SteadyBlock"
 config.cursor_blink_rate = 0
