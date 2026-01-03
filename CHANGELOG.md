@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2025-01-03
+## [0.2.0] - 2025-01-03
 
 ### Added
 - Multi-agent notification system for WezTerm workspaces
@@ -17,12 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile workflow aliases: mc, tn, ta, tl, tk, ts
 - Tailscale for remote access to development environment
 - Multi-agent workflow documentation in README
+- Claude Code user settings as stow package (`claude/.claude/settings.json`)
 
 ### Changed
 - WezTerm status bar enhanced with agent tracking
 - Claude Code hooks now set WezTerm user vars for visual state
+- install.sh now stows claude and tmux packages
 
-## [1.0.0] - 2025-01-02
+## [0.1.0] - 2025-01-02
 
 ### Added
 - ZSH configuration with Antidote plugin manager and <100ms startup

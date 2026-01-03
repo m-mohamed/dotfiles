@@ -30,8 +30,8 @@ zsh/.config/zsh/modules/*-secrets.zsh
 # Karabiner automatic backups
 karabiner/.config/karabiner/automatic_backups/
 
-# Claude Code local settings
-.claude/
+# Claude Code (project-local settings if created in repo root)
+/.claude/
 
 # Neovim runtime files
 nvim/.config/nvim/lazy-lock.json

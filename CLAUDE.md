@@ -67,6 +67,41 @@ Modules in `zsh/.config/zsh/modules/` load in numeric order:
 - **Minimal plugins**: Only 4 essential plugins
 - **Bun runtime**: Fast JavaScript runtime (no Node/NVM overhead)
 
+## Claude Code Configuration
+
+This dotfiles repo manages user-level Claude Code settings via the `claude` stow package.
+
+### Configuration Scopes
+
+| Scope | File | Purpose | In Dotfiles? |
+|-------|------|---------|--------------|
+| **User** | `~/.claude/settings.json` | Personal defaults (all projects) | Yes |
+| **Project** | `.claude/settings.json` | Team-shared project settings | No (per-repo) |
+| **Local** | `.claude/settings.local.json` | Machine-specific overrides | No (gitignored) |
+| **MCP (User)** | `~/.claude.json` | User-level MCPs + OAuth | No (has secrets) |
+| **MCP (Project)** | `.mcp.json` | Project-specific MCPs | No (per-repo) |
+
+### What's in Dotfiles
+
+The `claude/.claude/settings.json` file contains:
+- **Plugins**: Ralph Wiggum plugin enabled by default
+- **Hooks**: Stop/Notification hooks with WezTerm integration
+- **Settings**: Always-thinking mode enabled
+
+### WezTerm Integration
+
+Claude Code hooks set WezTerm user variables for visual state:
+- Tab titles show: `🤖` (running), `✅` (done), `🔔` (waiting)
+- Status bar shows agent count: `🤖2 🔔1 ✅1`
+- Notifications via terminal-notifier with click-to-focus
+
+### Per-Project MCPs
+
+MCP servers stay in each project's `.mcp.json` because:
+- Different Supabase project refs per app
+- Project-specific integrations (Sentry, PostHog, etc.)
+- Team members share project MCPs via version control
+
 ## Further Reading
 
 For detailed documentation, see:
