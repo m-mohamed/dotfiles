@@ -59,6 +59,18 @@ wez-reset() {
 alias wez-nuke='wez-reset'
 
 # ══════════════════════════════════════════════════════════════════════
+# Mobile (tmux for Termius/SSH access)
+# ══════════════════════════════════════════════════════════════════════
+# Start or attach to mobile Claude Code session
+alias mobile-claude='tmux new-session -A -s claude'
+alias mc='mobile-claude'  # Short alias
+alias ta='tmux attach -t'  # Attach to named session
+alias tl='tmux list-sessions'  # List sessions
+alias tn='tmux new -s'  # New named session: tn fantasy
+alias tk='tmux kill-session -t'  # Kill session: tk fantasy
+alias ts='tmux switch -t'  # Switch session (from inside tmux)
+
+# ══════════════════════════════════════════════════════════════════════
 # Completion Definitions for Aliases
 # ══════════════════════════════════════════════════════════════════════
 

@@ -20,6 +20,7 @@ tap "tw93/tap"                   # For mole (Mac cleanup utility)
 brew "stow"                      # Symlink management
 brew "zsh"                       # Shell (keep updated)
 brew "starship"                  # Cross-shell prompt
+brew "tmux"                      # Terminal multiplexer (mobile sessions via SSH)
 cask "wezterm"                   # GPU-accelerated terminal
 
 # ══════════════════════════════════════════════════════════════════════
@@ -57,7 +58,8 @@ brew "wget"                      # Internet file retriever
 # ══════════════════════════════════════════════════════════════════════
 brew "mole"                      # Deep clean and optimize Mac (cache, logs, apps)
 brew "terminal-notifier"         # macOS notifications from terminal (Claude Code hooks)
-brew "tailscale"                 # Private network for remote access to Mac
+brew "tailscale"                 # Private network CLI for remote access
+cask "tailscale"                 # Tailscale GUI app (menu bar)
 
 # ══════════════════════════════════════════════════════════════════════
 # Development Tools
