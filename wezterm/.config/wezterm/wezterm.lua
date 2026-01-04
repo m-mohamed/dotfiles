@@ -206,16 +206,37 @@ local function format_elapsed(start_time)
 end
 
 -- Read Claude status from file (file-based communication since hooks are detached)
+-- Pattern: JSON validation before parse (from resurrect.wezterm)
 local function read_claude_status(pane_id)
 	local path = wezterm.home_dir .. "/.cache/claude-status/pane-" .. tostring(pane_id) .. ".json"
 	local f = io.open(path, "r")
 	if not f then
 		return nil
 	end
+
 	local content = f:read("*a")
 	f:close()
+
+	-- Validate not empty (pattern from resurrect.wezterm)
+	if not content or content == "" then
+		wezterm.log_warn("claude-agent: Empty status file for pane " .. tostring(pane_id))
+		return nil
+	end
+
+	-- Parse with pcall
 	local ok, data = pcall(wezterm.json_parse, content)
-	return ok and data or nil
+	if not ok then
+		wezterm.log_warn("claude-agent: Invalid JSON in pane-" .. tostring(pane_id) .. ".json")
+		return nil
+	end
+
+	-- Validate expected schema
+	if type(data) ~= "table" or not data.status then
+		wezterm.log_warn("claude-agent: Missing 'status' field for pane " .. tostring(pane_id))
+		return nil
+	end
+
+	return data
 end
 
 -- Track last cleanup time to avoid running too frequently
@@ -831,9 +852,17 @@ local function get_agent_dashboard_choices()
 end
 
 -- Agent Dashboard action (wrapped in pcall for error visibility)
+-- Pattern: Event-based monitoring (from resurrect.wezterm)
 local agent_dashboard = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
 		local choices, counts = get_agent_dashboard_choices()
+
+		-- Calculate total for logging
+		local total = counts.blocked + counts.waiting + counts.running + counts.idle
+		wezterm.log_info("claude-agent: Dashboard opened, found " .. total .. " agents")
+
+		-- Emit custom event for monitoring
+		wezterm.emit("claude-agent.dashboard-opened", total, counts)
 
 		if #choices == 0 then
 			window:toast_notification("Agent Dashboard", "No Claude agents found", nil, 3000)
@@ -895,7 +924,9 @@ local agent_dashboard = wezterm.action_callback(function(window, pane)
 
 	if not ok then
 		window:toast_notification("Dashboard Error", tostring(err), nil, 5000)
-		wezterm.log_error("Agent Dashboard error: " .. tostring(err))
+		wezterm.log_error("claude-agent: Dashboard error: " .. tostring(err))
+		-- Emit error event for custom handling
+		wezterm.emit("claude-agent.error", "dashboard", tostring(err))
 	end
 end)
 
@@ -903,10 +934,13 @@ end)
 local jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
 		local agents = get_agents()
+		wezterm.log_info("claude-agent: Jump looking for attention-needed agents in " .. #agents .. " total")
 
 		-- Find first agent that needs attention
 		for _, agent in ipairs(agents) do
 			if agent.status == "blocked" or agent.status == "waiting" then
+				wezterm.log_info("claude-agent: Jumping to " .. agent.status .. " agent in " .. (agent.workspace or "?"))
+
 				-- Switch to workspace
 				if agent.workspace then
 					window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)
@@ -938,7 +972,8 @@ local jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 
 	if not ok then
 		window:toast_notification("Jump Error", tostring(err), nil, 5000)
-		wezterm.log_error("Jump to next waiting error: " .. tostring(err))
+		wezterm.log_error("claude-agent: Jump error: " .. tostring(err))
+		wezterm.emit("claude-agent.error", "jump", tostring(err))
 	end
 end)
 
