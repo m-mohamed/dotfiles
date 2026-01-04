@@ -4,6 +4,18 @@
   },
   "alwaysThinkingEnabled": true,
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n running | base64)",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",

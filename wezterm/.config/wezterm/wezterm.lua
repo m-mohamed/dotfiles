@@ -171,23 +171,20 @@ local function basename(s)
 	return string.gsub(s, "(.*[/\\])(.*)", "%2")
 end
 
--- Show agent state icons in tab titles
+-- Show agent state icons in tab titles (user vars only - process detection doesn't work with unix domains)
 wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
 	local pane = tab.active_pane
 	local user_vars = pane.user_vars or {}
 	local claude_status = user_vars.claude_status
-	local process = basename(pane.foreground_process_name or "")
 
-	-- State-based icons (priority: user_var status > process detection)
+	-- State-based icons from Claude Code hooks (process detection unavailable with multiplexer)
 	local icon = ""
-	if claude_status == "done" then
+	if claude_status == "running" then
+		icon = "🤖 "
+	elseif claude_status == "done" then
 		icon = "✅ "
 	elseif claude_status == "waiting" then
 		icon = "🔔 "
-	elseif process:match("claude") then
-		icon = "🤖 "
-	elseif process:match("nvim") then
-		icon = " "
 	end
 
 	local title = tab.tab_title ~= "" and tab.tab_title or pane.title
@@ -218,20 +215,19 @@ config.quick_select_patterns = {
 -- ║ Status Bar - Show Agent Summary, Workspace & Process                 ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 wezterm.on("update-right-status", function(window, _)
-	-- Count Claude agents by state across all panes
+	-- Count Claude agents by state across all panes (user vars only - process detection unavailable with multiplexer)
 	local running, waiting, done = 0, 0, 0
 	for _, tab in ipairs(window:mux_window():tabs()) do
 		for _, p in ipairs(tab:panes()) do
 			local vars = p:get_user_vars() or {}
 			local status = vars.claude_status
-			local proc = p:get_foreground_process_name() or ""
 
-			if status == "waiting" then
+			if status == "running" then
+				running = running + 1
+			elseif status == "waiting" then
 				waiting = waiting + 1
 			elseif status == "done" then
 				done = done + 1
-			elseif proc:match("claude") then
-				running = running + 1
 			end
 		end
 	end
