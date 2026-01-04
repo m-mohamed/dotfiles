@@ -251,9 +251,9 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 						inner_window:perform_action(act.SwitchToWorkspace({ name = workspace }), inner_pane)
 					end
 
-					-- Activate pane
+					-- Activate pane (use background process to avoid GUI freeze)
 					if pane_id then
-						wezterm.run_child_process({
+						wezterm.background_child_process({
 							M.options.wezterm_cli_path,
 							"cli",
 							"activate-pane",
@@ -288,7 +288,7 @@ M.jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 				end
 
 				if agent.pane_id then
-					wezterm.run_child_process({
+					wezterm.background_child_process({
 						M.options.wezterm_cli_path,
 						"cli",
 						"activate-pane",

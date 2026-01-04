@@ -9,10 +9,19 @@ M.status = require("claude-agent.status")
 M.statusbar = require("claude-agent.statusbar")
 M.dashboard = require("claude-agent.dashboard")
 
+-- Respect XDG_CACHE_HOME if set, fallback to ~/.cache
+local function get_cache_dir()
+	local xdg_cache = os.getenv("XDG_CACHE_HOME")
+	if xdg_cache and xdg_cache ~= "" then
+		return xdg_cache .. "/claude-status"
+	end
+	return os.getenv("HOME") .. "/.cache/claude-status"
+end
+
 -- Default options (can be overridden via apply_to_config)
 M.options = {
 	-- Status options
-	status_dir = os.getenv("HOME") .. "/.cache/claude-status",
+	status_dir = get_cache_dir(),
 	cache_ttl = 1, -- seconds
 
 	-- Display options
@@ -57,6 +66,9 @@ M.apply_to_config = function(config, opts)
 	config.status_update_interval = M.options.status_update_interval
 
 	wezterm.log_info("claude-agent: Plugin initialized")
+
+	-- Emit ready event for extensibility
+	wezterm.emit("claude-agent.ready", M.options)
 end
 
 -- Export actions for custom keybinding

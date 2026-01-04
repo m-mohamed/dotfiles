@@ -158,7 +158,10 @@ config.notification_handling = "AlwaysShow"
 -- Bell event handler - convert terminal bells to toast notifications for Claude
 wezterm.on("bell", function(window, pane)
 	local process = pane:get_foreground_process_name() or ""
-	if process:match("claude") then
+	-- Extract just the binary name (remove path and extension)
+	local binary = process:gsub(".*/", ""):gsub("%.exe$", "")
+	-- Match exact "claude" binary name to avoid false positives
+	if binary == "claude" then
 		window:toast_notification("Claude Code", "Agent ready for input", nil, 4000)
 	end
 end)

@@ -2,6 +2,10 @@
 local wezterm = require("wezterm")
 local M = {}
 
+-- Cache state version (increment if schema changes)
+local CACHE_VERSION = 1
+local MAX_CACHE_SIZE = 100 -- Maximum cached panes
+
 -- Default options (can be overridden via setup)
 M.options = {
 	status_dir = os.getenv("HOME") .. "/.cache/claude-status",
@@ -12,11 +16,28 @@ M.options = {
 
 -- Get or initialize cache from wezterm.GLOBAL
 local function get_state()
-	wezterm.GLOBAL.claude_agent = wezterm.GLOBAL.claude_agent or {
-		cache = {},
-		last_cleanup = 0,
-	}
-	return wezterm.GLOBAL.claude_agent
+	local state = wezterm.GLOBAL.claude_agent
+
+	-- Initialize or reset if version mismatch
+	if not state or state.version ~= CACHE_VERSION then
+		wezterm.GLOBAL.claude_agent = {
+			version = CACHE_VERSION,
+			cache = {},
+			cache_order = {}, -- Track insertion order for LRU
+			last_cleanup = 0,
+		}
+		state = wezterm.GLOBAL.claude_agent
+	end
+
+	return state
+end
+
+-- Evict oldest cache entries when over limit
+local function evict_old_cache_entries(state)
+	while #state.cache_order > MAX_CACHE_SIZE do
+		local oldest_id = table.remove(state.cache_order, 1)
+		state.cache[oldest_id] = nil
+	end
 end
 
 -- Setup with user options
@@ -83,8 +104,14 @@ M.read_cached = function(pane_id)
 		end
 	end
 
-	-- Update cache
+	-- Update cache with LRU tracking
+	if not entry then
+		-- New entry - add to order tracking
+		table.insert(state.cache_order, pane_id)
+		evict_old_cache_entries(state)
+	end
 	cache[pane_id] = { data = data, time = now }
+
 	return data
 end
 
