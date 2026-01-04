@@ -5,10 +5,28 @@ local colors = require("claude-agent.colors")
 local status = require("claude-agent.status")
 local M = {}
 
+-- Detect wezterm CLI path
+local function find_wezterm_cli()
+	-- Check common locations
+	local paths = {
+		"/opt/homebrew/bin/wezterm", -- macOS Homebrew ARM
+		"/usr/local/bin/wezterm", -- macOS Homebrew Intel / Linux
+		"/usr/bin/wezterm", -- Linux system
+	}
+	for _, path in ipairs(paths) do
+		local f = io.open(path, "r")
+		if f then
+			f:close()
+			return path
+		end
+	end
+	return "wezterm" -- Fallback to PATH lookup
+end
+
 -- Default options
 M.options = {
 	show_idle = true,
-	wezterm_cli_path = "/opt/homebrew/bin/wezterm",
+	wezterm_cli_path = find_wezterm_cli(),
 }
 
 -- Priority order for agent status (attention-needed first)

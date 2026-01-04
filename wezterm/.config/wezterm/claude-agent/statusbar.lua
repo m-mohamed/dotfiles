@@ -81,7 +81,11 @@ M.register_events = function()
 		end
 
 		-- Section 2: Domain
-		local domain_name = window:active_pane():get_domain_name() or "local"
+		local active_pane = window:active_pane()
+		if not active_pane then
+			return
+		end
+		local domain_name = active_pane:get_domain_name() or "local"
 		table.insert(cells, { Foreground = { Color = colors.ui.muted } })
 		table.insert(cells, { Text = "[" .. domain_name .. "]" .. sep })
 
@@ -99,7 +103,7 @@ M.register_events = function()
 		end
 
 		-- Section 5: Process name
-		local process_name = window:active_pane():get_foreground_process_name() or ""
+		local process_name = active_pane:get_foreground_process_name() or ""
 		process_name = process_name:gsub(".*/", ""):gsub("%.exe$", "")
 		if process_name ~= "" then
 			table.insert(cells, { Foreground = { Color = colors.ui.fg } })

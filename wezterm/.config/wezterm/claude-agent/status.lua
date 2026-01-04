@@ -47,7 +47,11 @@ M.read_file = function(pane_id)
 	end
 
 	local ok, data = pcall(wezterm.json_parse, content)
-	if not ok or type(data) ~= "table" or not data.status then
+	if not ok then
+		wezterm.log_warn("claude-agent: Failed to parse status JSON for pane " .. tostring(pane_id))
+		return nil
+	end
+	if type(data) ~= "table" or not data.status then
 		return nil
 	end
 
@@ -122,7 +126,14 @@ M.cleanup_stale_files = function()
 	local current_panes = M.get_current_pane_ids()
 
 	-- Read directory and remove orphaned files
-	local handle = io.popen('ls "' .. M.options.status_dir .. '" 2>/dev/null')
+	-- Validate status_dir path (prevent shell injection)
+	local status_dir = M.options.status_dir
+	if not status_dir or status_dir:match("[;&|`$]") then
+		wezterm.log_warn("claude-agent: Invalid status_dir path, skipping cleanup")
+		return
+	end
+
+	local handle = io.popen('ls "' .. status_dir .. '" 2>/dev/null')
 	if handle then
 		for file in handle:lines() do
 			local pane_id = file:match("pane%-(%d+)%.json")
