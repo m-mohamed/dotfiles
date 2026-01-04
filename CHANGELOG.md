@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-04
+
+### Added
+- Enhanced Agent Dashboard with priority sorting (blocked → waiting → running → idle)
+- Antigravity-style agent statuses: idle (⏸️), running (🤖), blocked (🔐), waiting (🔔)
+- Colored status indicators in tabs, status bar, and Agent Dashboard (Tokyo Night)
+- Elapsed time display for running/blocked/waiting agents
+- Visual separators in Agent Dashboard grouping agents by status
+- Background highlighting for attention-needed agents
+- `Ctrl+A N` keyboard shortcut to jump to next blocked/waiting agent
+- Claude Code hooks: SessionStart, PermissionRequest (new blocked status)
+
+### Changed
+- Tab titles now use `wezterm.format()` for colored text
+- Status bar shows colored agent counts by status
+- Agent Dashboard title shows summary count
+
 ## [0.3.0] - 2025-01-03
 
 ### Added

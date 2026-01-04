@@ -164,31 +164,80 @@ wezterm.on("bell", function(window, pane)
 end)
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║ Multi-Agent Tab Title Formatting                                     ║
+-- ║ Multi-Agent Tab Title Formatting (Antigravity-inspired)              ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
--- Helper to get basename from path
-local function basename(s)
-	return string.gsub(s, "(.*[/\\])(.*)", "%2")
+-- Tokyo Night color palette for agent status
+local agent_colors = {
+	idle = "#565f89", -- Gray
+	running = "#7aa2f7", -- Blue
+	blocked = "#ff9e64", -- Orange
+	waiting = "#e0af68", -- Yellow
+	unknown = "#565f89", -- Gray
+	fg = "#c0caf5", -- Default text
+	muted = "#565f89", -- Muted text
+}
+
+-- Status icons (Antigravity-style)
+local status_icons = {
+	idle = "⏸️",
+	running = "🤖",
+	blocked = "🔐",
+	waiting = "🔔",
+	unknown = "⚪",
+}
+
+-- Helper to format elapsed time
+local function format_elapsed(start_time)
+	if not start_time then
+		return nil
+	end
+	local start = tonumber(start_time)
+	if not start then
+		return nil
+	end
+	local elapsed = os.time() - start
+	if elapsed < 60 then
+		return string.format("%ds", elapsed)
+	elseif elapsed < 3600 then
+		return string.format("%dm", math.floor(elapsed / 60))
+	else
+		return string.format("%dh", math.floor(elapsed / 3600))
+	end
 end
 
--- Show agent state icons in tab titles (user vars only - process detection doesn't work with unix domains)
-wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
+-- Show agent state icons in tab titles with colors and elapsed time
+wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	local pane = tab.active_pane
 	local user_vars = pane.user_vars or {}
-	local claude_status = user_vars.claude_status
+	local status = user_vars.claude_status or "unknown"
+	local start_time = user_vars.claude_start_time
 
-	-- State-based icons from Claude Code hooks (process detection unavailable with multiplexer)
-	local icon = ""
-	if claude_status == "running" then
-		icon = "🤖 "
-	elseif claude_status == "done" then
-		icon = "✅ "
-	elseif claude_status == "waiting" then
-		icon = "🔔 "
+	-- Get icon and color for status
+	local icon = status_icons[status] or status_icons.unknown
+	local color = agent_colors[status] or agent_colors.unknown
+
+	-- Get title
+	local title = tab.tab_title ~= "" and tab.tab_title or pane.title
+	title = title:gsub("^✳%s*", "") -- Remove ✳ prefix if present
+
+	-- Format elapsed time for running/blocked/waiting states
+	local elapsed_str = ""
+	if status == "running" or status == "blocked" or status == "waiting" then
+		local elapsed = format_elapsed(start_time)
+		if elapsed then
+			elapsed_str = string.format(" (%s)", elapsed)
+		end
 	end
 
-	local title = tab.tab_title ~= "" and tab.tab_title or pane.title
-	return icon .. title
+	-- Return formatted tab title with colors
+	return wezterm.format({
+		{ Foreground = { Color = color } },
+		{ Text = icon .. " " },
+		{ Foreground = { Color = agent_colors.fg } },
+		{ Text = title },
+		{ Foreground = { Color = agent_colors.muted } },
+		{ Text = elapsed_str },
+	})
 end)
 
 -- Cursor settings - steady, no blinking
@@ -215,8 +264,8 @@ config.quick_select_patterns = {
 -- ║ Status Bar - Show Agent Summary, Workspace & Process                 ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 wezterm.on("update-right-status", function(window, _)
-	-- Count Claude agents by state across all panes (user vars only - process detection unavailable with multiplexer)
-	local running, waiting, done = 0, 0, 0
+	-- Count Claude agents by state across all panes (Antigravity statuses)
+	local running, blocked, waiting, idle = 0, 0, 0, 0
 	for _, tab in ipairs(window:mux_window():tabs()) do
 		for _, p in ipairs(tab:panes()) do
 			local vars = p:get_user_vars() or {}
@@ -224,17 +273,38 @@ wezterm.on("update-right-status", function(window, _)
 
 			if status == "running" then
 				running = running + 1
+			elseif status == "blocked" then
+				blocked = blocked + 1
 			elseif status == "waiting" then
 				waiting = waiting + 1
-			elseif status == "done" then
-				done = done + 1
+			elseif status == "idle" then
+				idle = idle + 1
 			end
 		end
 	end
 
-	local agent_summary = ""
-	if running + waiting + done > 0 then
-		agent_summary = string.format("🤖%d 🔔%d ✅%d | ", running, waiting, done)
+	-- Build colored agent summary using wezterm.format
+	local agent_parts = {}
+	local total = running + blocked + waiting + idle
+	if total > 0 then
+		if running > 0 then
+			table.insert(agent_parts, { Foreground = { Color = agent_colors.running } })
+			table.insert(agent_parts, { Text = "🤖" .. running })
+		end
+		if blocked > 0 then
+			table.insert(agent_parts, { Foreground = { Color = agent_colors.blocked } })
+			table.insert(agent_parts, { Text = " 🔐" .. blocked })
+		end
+		if waiting > 0 then
+			table.insert(agent_parts, { Foreground = { Color = agent_colors.waiting } })
+			table.insert(agent_parts, { Text = " 🔔" .. waiting })
+		end
+		if idle > 0 then
+			table.insert(agent_parts, { Foreground = { Color = agent_colors.idle } })
+			table.insert(agent_parts, { Text = " ⏸️" .. idle })
+		end
+		table.insert(agent_parts, { Foreground = { Color = agent_colors.fg } })
+		table.insert(agent_parts, { Text = " | " })
 	end
 
 	local process_name = window:active_pane():get_foreground_process_name() or ""
@@ -250,7 +320,12 @@ wezterm.on("update-right-status", function(window, _)
 	local domain_name = window:active_pane():get_domain_name() or "local"
 	local domain = "[" .. domain_name .. "] | "
 
-	window:set_right_status(agent_summary .. domain .. workspace .. leader_active .. process_name)
+	-- Combine formatted agent summary with plain text
+	local plain_text = domain .. workspace .. leader_active .. process_name
+	table.insert(agent_parts, { Foreground = { Color = agent_colors.fg } })
+	table.insert(agent_parts, { Text = plain_text })
+
+	window:set_right_status(wezterm.format(agent_parts))
 end)
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
@@ -492,5 +567,249 @@ config.launch_menu = {
 		args = { "zsh", "-l" },
 	},
 }
+
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║ Agent Dashboard - View all Claude agents across workspaces           ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+
+-- Priority order for agent status (attention-needed first)
+local status_priority = {
+	blocked = 1, -- Needs permission
+	waiting = 2, -- Needs user input
+	running = 3, -- Working
+	idle = 4, -- Done
+	unknown = 5, -- Unknown state
+}
+
+-- Collect all Claude agents with metadata
+local function get_agents()
+	local agents = {}
+
+	for _, mux_win in ipairs(wezterm.mux.all_windows()) do
+		local workspace = mux_win:get_workspace()
+
+		for _, tab in ipairs(mux_win:tabs()) do
+			for _, pane in ipairs(tab:panes()) do
+				local title = pane:get_title() or ""
+
+				-- Check if this is a Claude Code pane (✳ prefix or claude in title)
+				if title:match("^✳") or title:lower():match("claude") then
+					local user_vars = pane:get_user_vars() or {}
+					local status = user_vars.claude_status or "unknown"
+					local start_time = user_vars.claude_start_time
+					local project = user_vars.claude_project or workspace
+
+					-- Clean title (remove ✳ prefix)
+					local clean_title = title:gsub("^✳%s*", "")
+
+					table.insert(agents, {
+						tab_id = tab:tab_id(),
+						pane_id = pane:pane_id(),
+						workspace = workspace,
+						project = project,
+						title = clean_title,
+						status = status,
+						start_time = start_time,
+						priority = status_priority[status] or 5,
+					})
+				end
+			end
+		end
+	end
+
+	-- Sort by priority (blocked → waiting → running → idle)
+	table.sort(agents, function(a, b)
+		if a.priority ~= b.priority then
+			return a.priority < b.priority
+		end
+		return a.workspace < b.workspace
+	end)
+
+	return agents
+end
+
+-- Build dashboard choices with separators and colors
+local function get_agent_dashboard_choices()
+	local agents = get_agents()
+	local choices = {}
+	local counts = { blocked = 0, waiting = 0, running = 0, idle = 0 }
+	local last_status = nil
+
+	-- Count agents by status
+	for _, agent in ipairs(agents) do
+		if counts[agent.status] then
+			counts[agent.status] = counts[agent.status] + 1
+		end
+	end
+
+	-- Build choices with separators
+	for _, agent in ipairs(agents) do
+		-- Add separator when status changes
+		if agent.status ~= last_status then
+			local sep_label = ""
+			if agent.status == "blocked" then
+				sep_label = "─── 🔐 NEEDS PERMISSION ─────────────"
+			elseif agent.status == "waiting" then
+				sep_label = "─── 🔔 NEEDS INPUT ──────────────────"
+			elseif agent.status == "running" then
+				sep_label = "─── 🤖 RUNNING ──────────────────────"
+			elseif agent.status == "idle" then
+				sep_label = "─── ⏸️ IDLE ──────────────────────────"
+			end
+
+			if sep_label ~= "" then
+				table.insert(choices, {
+					id = "sep_" .. agent.status,
+					label = wezterm.format({
+						{ Foreground = { Color = agent_colors.muted } },
+						{ Text = sep_label },
+					}),
+				})
+			end
+			last_status = agent.status
+		end
+
+		-- Format elapsed time
+		local elapsed_str = ""
+		if agent.start_time then
+			local elapsed = format_elapsed(agent.start_time)
+			if elapsed then
+				elapsed_str = " (" .. elapsed .. ")"
+			end
+		end
+
+		-- Get status icon and color
+		local icon = status_icons[agent.status] or status_icons.unknown
+		local color = agent_colors[agent.status] or agent_colors.unknown
+
+		-- Build formatted label
+		local label_parts = {
+			{ Foreground = { Color = color } },
+			{ Text = icon .. " " },
+			{ Foreground = { Color = agent_colors.muted } },
+			{ Text = "[" .. agent.workspace .. "] " },
+			{ Foreground = { Color = agent_colors.fg } },
+			{ Text = agent.title },
+			{ Foreground = { Color = agent_colors.muted } },
+			{ Text = elapsed_str },
+		}
+
+		-- Add background highlight for attention-needed agents
+		if agent.status == "blocked" or agent.status == "waiting" then
+			table.insert(label_parts, 1, { Background = { Color = "#2a2a3d" } })
+		end
+
+		table.insert(choices, {
+			id = string.format("%d:%d:%s", agent.tab_id, agent.pane_id, agent.workspace),
+			label = wezterm.format(label_parts),
+		})
+	end
+
+	return choices, counts
+end
+
+-- Agent Dashboard action
+local agent_dashboard = wezterm.action_callback(function(window, pane)
+	local choices, counts = get_agent_dashboard_choices()
+
+	if #choices == 0 then
+		window:toast_notification("Agent Dashboard", "No Claude agents found", nil, 3000)
+		return
+	end
+
+	-- Build summary for title
+	local summary_parts = {}
+	if counts.blocked > 0 then
+		table.insert(summary_parts, counts.blocked .. " blocked")
+	end
+	if counts.waiting > 0 then
+		table.insert(summary_parts, counts.waiting .. " waiting")
+	end
+	if counts.running > 0 then
+		table.insert(summary_parts, counts.running .. " running")
+	end
+	if counts.idle > 0 then
+		table.insert(summary_parts, counts.idle .. " idle")
+	end
+	local summary = table.concat(summary_parts, ", ")
+
+	window:perform_action(
+		act.InputSelector({
+			title = "🤖 Agent Dashboard (" .. summary .. ")",
+			description = "Select an agent to jump to (/ to search)",
+			choices = choices,
+			fuzzy = true,
+			action = wezterm.action_callback(function(inner_window, inner_pane, id, label)
+				if not id or id:match("^sep_") then
+					return -- Ignore separator clicks
+				end
+
+				-- Parse the id: "tab_id:pane_id:workspace"
+				local tab_id, pane_id, workspace = id:match("(%d+):(%d+):(.+)")
+				tab_id = tonumber(tab_id)
+				pane_id = tonumber(pane_id)
+
+				-- Switch to workspace first
+				inner_window:perform_action(act.SwitchToWorkspace({ name = workspace }), inner_pane)
+
+				-- Then activate the specific pane
+				wezterm.run_child_process({
+					"/opt/homebrew/bin/wezterm",
+					"cli",
+					"activate-pane",
+					"--pane-id",
+					tostring(pane_id),
+				})
+			end),
+		}),
+		pane
+	)
+end)
+
+-- Jump to next agent that needs attention (blocked or waiting)
+local jump_to_next_waiting = wezterm.action_callback(function(window, pane)
+	local agents = get_agents()
+
+	-- Find first agent that needs attention
+	for _, agent in ipairs(agents) do
+		if agent.status == "blocked" or agent.status == "waiting" then
+			-- Switch to workspace
+			window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)
+
+			-- Activate the pane
+			wezterm.run_child_process({
+				"/opt/homebrew/bin/wezterm",
+				"cli",
+				"activate-pane",
+				"--pane-id",
+				tostring(agent.pane_id),
+			})
+
+			window:toast_notification(
+				"Agent Found",
+				string.format("%s in %s", status_icons[agent.status], agent.workspace),
+				nil,
+				2000
+			)
+			return
+		end
+	end
+
+	window:toast_notification("No Agents", "No agents need attention", nil, 2000)
+end)
+
+-- Add Agent Dashboard keybinding (Leader + g for "agents")
+table.insert(config.keys, {
+	key = "g",
+	mods = "LEADER",
+	action = agent_dashboard,
+})
+
+-- Add Jump to Next Waiting keybinding (Leader + n for "next")
+table.insert(config.keys, {
+	key = "n",
+	mods = "LEADER",
+	action = jump_to_next_waiting,
+})
 
 return config

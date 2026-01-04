@@ -4,25 +4,37 @@
   },
   "alwaysThinkingEnabled": true,
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n idle | base64) && printf '\\033]1337;SetUserVar=%s=%s\\007' claude_project $(echo -n ${PWD##*/} | base64)",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n running | base64)",
+            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n running | base64) && printf '\\033]1337;SetUserVar=%s=%s\\007' claude_start_time $(echo -n $(date +%s) | base64)",
             "timeout": 5
           }
         ]
       }
     ],
-    "Stop": [
+    "PermissionRequest": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n done | base64) && terminal-notifier -title '✅ Claude Done' -message \"Task completed in ${PWD##*/}\" -group \"$PWD\" -sound default -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm",
+            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n blocked | base64) && terminal-notifier -title '🔐 Permission Needed' -message \"Approve in ${PWD##*/}\" -group \"$PWD:perm\" -sound Basso -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm",
             "timeout": 10
           }
         ]
@@ -35,6 +47,18 @@
           {
             "type": "command",
             "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n waiting | base64) && terminal-notifier -title '🔔 Claude Waiting' -message \"Needs input in ${PWD##*/}\" -group \"$PWD:input\" -sound Basso -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\033]1337;SetUserVar=%s=%s\\007' claude_status $(echo -n idle | base64) && terminal-notifier -title '⏸️ Claude Idle' -message \"Done in ${PWD##*/}\" -group \"$PWD\" -sound default -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm",
             "timeout": 10
           }
         ]
