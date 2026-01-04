@@ -221,7 +221,30 @@ end
 -- Track last cleanup time to avoid running too frequently
 local last_cleanup_time = 0
 
--- Clean up stale status files (older than 1 hour)
+-- Get all current pane IDs
+local function get_current_pane_ids()
+	local pane_ids = {}
+	local all_windows = wezterm.mux.all_windows()
+	if not all_windows then
+		return pane_ids
+	end
+	for _, mux_win in ipairs(all_windows) do
+		local tabs = mux_win:tabs()
+		if tabs then
+			for _, tab in ipairs(tabs) do
+				local panes = tab:panes()
+				if panes then
+					for _, pane in ipairs(panes) do
+						pane_ids[tostring(pane:pane_id())] = true
+					end
+				end
+			end
+		end
+	end
+	return pane_ids
+end
+
+-- Clean up stale and orphaned status files
 local function cleanup_stale_status_files()
 	local now = os.time()
 	-- Only run cleanup every 5 minutes
@@ -230,7 +253,24 @@ local function cleanup_stale_status_files()
 	end
 	last_cleanup_time = now
 
-	-- Use background process to avoid blocking
+	-- Get current pane IDs for orphan detection
+	local current_panes = get_current_pane_ids()
+	local status_dir = wezterm.home_dir .. "/.cache/claude-status"
+
+	-- Read directory and remove orphaned files
+	local handle = io.popen('ls "' .. status_dir .. '" 2>/dev/null')
+	if handle then
+		for file in handle:lines() do
+			local pane_id = file:match("pane%-(%d+)%.json")
+			if pane_id and not current_panes[pane_id] then
+				-- Remove orphaned file
+				os.remove(status_dir .. "/" .. file)
+			end
+		end
+		handle:close()
+	end
+
+	-- Also clean files older than 1 hour (backup cleanup)
 	wezterm.background_child_process({
 		"zsh",
 		"-c",
@@ -641,11 +681,26 @@ local status_priority = {
 local function get_agents()
 	local agents = {}
 
-	for _, mux_win in ipairs(wezterm.mux.all_windows()) do
-		local workspace = mux_win:get_workspace()
+	-- Defensive: check mux.all_windows() exists and returns valid data
+	local all_windows = wezterm.mux.all_windows()
+	if not all_windows then
+		return agents
+	end
 
-		for _, tab in ipairs(mux_win:tabs()) do
-			for _, pane in ipairs(tab:panes()) do
+	for _, mux_win in ipairs(all_windows) do
+		local workspace = mux_win:get_workspace() or "default"
+		local tabs = mux_win:tabs()
+		if not tabs then
+			goto continue_window
+		end
+
+		for _, tab in ipairs(tabs) do
+			local panes = tab:panes()
+			if not panes then
+				goto continue_tab
+			end
+
+			for _, pane in ipairs(panes) do
 				local title = pane:get_title() or ""
 				local pane_id = pane:pane_id()
 
@@ -679,7 +734,9 @@ local function get_agents()
 					})
 				end
 			end
+			::continue_tab::
 		end
+		::continue_window::
 	end
 
 	-- Sort by priority (blocked → waiting → running → idle)
@@ -687,7 +744,7 @@ local function get_agents()
 		if a.priority ~= b.priority then
 			return a.priority < b.priority
 		end
-		return a.workspace < b.workspace
+		return (a.workspace or "") < (b.workspace or "")
 	end)
 
 	return agents
@@ -773,94 +830,116 @@ local function get_agent_dashboard_choices()
 	return choices, counts
 end
 
--- Agent Dashboard action
+-- Agent Dashboard action (wrapped in pcall for error visibility)
 local agent_dashboard = wezterm.action_callback(function(window, pane)
-	local choices, counts = get_agent_dashboard_choices()
+	local ok, err = pcall(function()
+		local choices, counts = get_agent_dashboard_choices()
 
-	if #choices == 0 then
-		window:toast_notification("Agent Dashboard", "No Claude agents found", nil, 3000)
-		return
+		if #choices == 0 then
+			window:toast_notification("Agent Dashboard", "No Claude agents found", nil, 3000)
+			return
+		end
+
+		-- Build summary for title
+		local summary_parts = {}
+		if counts.blocked > 0 then
+			table.insert(summary_parts, counts.blocked .. " blocked")
+		end
+		if counts.waiting > 0 then
+			table.insert(summary_parts, counts.waiting .. " waiting")
+		end
+		if counts.running > 0 then
+			table.insert(summary_parts, counts.running .. " running")
+		end
+		if counts.idle > 0 then
+			table.insert(summary_parts, counts.idle .. " idle")
+		end
+		local summary = table.concat(summary_parts, ", ")
+
+		window:perform_action(
+			act.InputSelector({
+				title = "Agent Dashboard (" .. summary .. ")",
+				description = "Select an agent to jump to (/ to search)",
+				choices = choices,
+				fuzzy = true,
+				action = wezterm.action_callback(function(inner_window, inner_pane, id, label)
+					if not id or id:match("^sep_") then
+						return -- Ignore separator clicks
+					end
+
+					-- Parse the id: "tab_id:pane_id:workspace"
+					local tab_id, pane_id, workspace = id:match("(%d+):(%d+):(.+)")
+					tab_id = tonumber(tab_id)
+					pane_id = tonumber(pane_id)
+
+					-- Switch to workspace first
+					if workspace then
+						inner_window:perform_action(act.SwitchToWorkspace({ name = workspace }), inner_pane)
+					end
+
+					-- Then activate the specific pane
+					if pane_id then
+						wezterm.run_child_process({
+							"/opt/homebrew/bin/wezterm",
+							"cli",
+							"activate-pane",
+							"--pane-id",
+							tostring(pane_id),
+						})
+					end
+				end),
+			}),
+			pane
+		)
+	end)
+
+	if not ok then
+		window:toast_notification("Dashboard Error", tostring(err), nil, 5000)
+		wezterm.log_error("Agent Dashboard error: " .. tostring(err))
 	end
-
-	-- Build summary for title
-	local summary_parts = {}
-	if counts.blocked > 0 then
-		table.insert(summary_parts, counts.blocked .. " blocked")
-	end
-	if counts.waiting > 0 then
-		table.insert(summary_parts, counts.waiting .. " waiting")
-	end
-	if counts.running > 0 then
-		table.insert(summary_parts, counts.running .. " running")
-	end
-	if counts.idle > 0 then
-		table.insert(summary_parts, counts.idle .. " idle")
-	end
-	local summary = table.concat(summary_parts, ", ")
-
-	window:perform_action(
-		act.InputSelector({
-			title = "🤖 Agent Dashboard (" .. summary .. ")",
-			description = "Select an agent to jump to (/ to search)",
-			choices = choices,
-			fuzzy = true,
-			action = wezterm.action_callback(function(inner_window, inner_pane, id, label)
-				if not id or id:match("^sep_") then
-					return -- Ignore separator clicks
-				end
-
-				-- Parse the id: "tab_id:pane_id:workspace"
-				local tab_id, pane_id, workspace = id:match("(%d+):(%d+):(.+)")
-				tab_id = tonumber(tab_id)
-				pane_id = tonumber(pane_id)
-
-				-- Switch to workspace first
-				inner_window:perform_action(act.SwitchToWorkspace({ name = workspace }), inner_pane)
-
-				-- Then activate the specific pane
-				wezterm.run_child_process({
-					"/opt/homebrew/bin/wezterm",
-					"cli",
-					"activate-pane",
-					"--pane-id",
-					tostring(pane_id),
-				})
-			end),
-		}),
-		pane
-	)
 end)
 
 -- Jump to next agent that needs attention (blocked or waiting)
 local jump_to_next_waiting = wezterm.action_callback(function(window, pane)
-	local agents = get_agents()
+	local ok, err = pcall(function()
+		local agents = get_agents()
 
-	-- Find first agent that needs attention
-	for _, agent in ipairs(agents) do
-		if agent.status == "blocked" or agent.status == "waiting" then
-			-- Switch to workspace
-			window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)
+		-- Find first agent that needs attention
+		for _, agent in ipairs(agents) do
+			if agent.status == "blocked" or agent.status == "waiting" then
+				-- Switch to workspace
+				if agent.workspace then
+					window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)
+				end
 
-			-- Activate the pane
-			wezterm.run_child_process({
-				"/opt/homebrew/bin/wezterm",
-				"cli",
-				"activate-pane",
-				"--pane-id",
-				tostring(agent.pane_id),
-			})
+				-- Activate the pane
+				if agent.pane_id then
+					wezterm.run_child_process({
+						"/opt/homebrew/bin/wezterm",
+						"cli",
+						"activate-pane",
+						"--pane-id",
+						tostring(agent.pane_id),
+					})
+				end
 
-			window:toast_notification(
-				"Agent Found",
-				string.format("%s in %s", status_icons[agent.status], agent.workspace),
-				nil,
-				2000
-			)
-			return
+				window:toast_notification(
+					"Agent Found",
+					string.format("%s in %s", status_icons[agent.status] or "?", agent.workspace or "?"),
+					nil,
+					2000
+				)
+				return
+			end
 		end
-	end
 
-	window:toast_notification("No Agents", "No agents need attention", nil, 2000)
+		window:toast_notification("No Agents", "No agents need attention", nil, 2000)
+	end)
+
+	if not ok then
+		window:toast_notification("Jump Error", tostring(err), nil, 5000)
+		wezterm.log_error("Jump to next waiting error: " .. tostring(err))
+	end
 end)
 
 -- Add Agent Dashboard keybinding (Leader + g for "agents")
