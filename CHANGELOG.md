@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-01-04
+
+### Fixed
+- Claude Code hooks now use file-based status communication (OSC 1337 escape sequences don't work from detached hook subprocesses)
+- WezTerm Agent Dashboard now correctly displays agent status icons (🤖 running, 🔐 blocked, 🔔 waiting, ⏸️ idle)
+- Tab titles now show agent status with elapsed time
+
+### Added
+- File-based Claude status tracking at `~/.cache/claude-status/pane-{id}.json`
+- WezTerm reads status files every 100ms for near-instant updates
+- Automatic cleanup of stale status files older than 1 hour
+- `wez-nuke` now cleans up Claude status files
+
+### Changed
+- Claude Code hooks write JSON files instead of OSC escape sequences
+- WezTerm `format-tab-title` and `update-right-status` read from files instead of user vars
+- `get_agents()` function now uses file-based status detection
+
 ## [0.5.0] - 2025-01-04
 
 ### Fixed

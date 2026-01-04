@@ -205,20 +205,60 @@ local function format_elapsed(start_time)
 	end
 end
 
+-- Read Claude status from file (file-based communication since hooks are detached)
+local function read_claude_status(pane_id)
+	local path = wezterm.home_dir .. "/.cache/claude-status/pane-" .. tostring(pane_id) .. ".json"
+	local f = io.open(path, "r")
+	if not f then
+		return nil
+	end
+	local content = f:read("*a")
+	f:close()
+	local ok, data = pcall(wezterm.json_parse, content)
+	return ok and data or nil
+end
+
+-- Track last cleanup time to avoid running too frequently
+local last_cleanup_time = 0
+
+-- Clean up stale status files (older than 1 hour)
+local function cleanup_stale_status_files()
+	local now = os.time()
+	-- Only run cleanup every 5 minutes
+	if now - last_cleanup_time < 300 then
+		return
+	end
+	last_cleanup_time = now
+
+	-- Use background process to avoid blocking
+	wezterm.background_child_process({
+		"zsh",
+		"-c",
+		[[find ~/.cache/claude-status -name "pane-*.json" -type f -mmin +60 -delete 2>/dev/null]],
+	})
+end
+
 -- Show agent state icons in tab titles with colors and elapsed time
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	local pane = tab.active_pane
-	local user_vars = pane.user_vars or {}
-	local status = user_vars.claude_status or "unknown"
-	local start_time = user_vars.claude_start_time
 
-	-- Get icon and color for status
-	local icon = status_icons[status] or status_icons.unknown
-	local color = agent_colors[status] or agent_colors.unknown
+	-- Read status from file (file-based since hooks are detached processes)
+	local status_data = read_claude_status(pane.pane_id)
+	local status = status_data and status_data.status or nil
+	local start_time = status_data and status_data.start_time or nil
 
 	-- Get title
 	local title = tab.tab_title ~= "" and tab.tab_title or pane.title
 	title = title:gsub("^✳%s*", "") -- Remove ✳ prefix if present
+
+	-- If no Claude status file, show plain tab title
+	if not status then
+		return title
+	end
+
+	-- Get icon and color for status
+	local icon = status_icons[status] or status_icons.unknown
+	local color = agent_colors[status] or agent_colors.unknown
 
 	-- Format elapsed time for running/blocked/waiting states
 	local elapsed_str = ""
@@ -248,6 +288,7 @@ config.cursor_blink_rate = 0
 config.front_end = "WebGpu"
 config.max_fps = 120
 config.animation_fps = 30
+config.status_update_interval = 100 -- 100ms polling for file-based status
 
 -- macOS specific - allow Cmd+click for URLs
 config.bypass_mouse_reporting_modifiers = "CMD"
@@ -264,12 +305,15 @@ config.quick_select_patterns = {
 -- ║ Status Bar - Show Agent Summary, Workspace & Process                 ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 wezterm.on("update-right-status", function(window, _)
-	-- Count Claude agents by state across all panes (Antigravity statuses)
+	-- Periodically clean up stale status files
+	cleanup_stale_status_files()
+
+	-- Count Claude agents by state across all panes (file-based status)
 	local running, blocked, waiting, idle = 0, 0, 0, 0
 	for _, tab in ipairs(window:mux_window():tabs()) do
 		for _, p in ipairs(tab:panes()) do
-			local vars = p:get_user_vars() or {}
-			local status = vars.claude_status
+			local status_data = read_claude_status(p:pane_id())
+			local status = status_data and status_data.status
 
 			if status == "running" then
 				running = running + 1
@@ -528,6 +572,7 @@ config.keys = {-- Basic operations
           rm -f ~/.local/share/wezterm/default-*
           rm -f ~/.local/share/wezterm/wezterm-gui-log-*.txt
           rm -f ~/.local/share/wezterm/wezterm-log-*.txt
+          rm -rf ~/.cache/claude-status
         ]],
 			})
 			-- Quit WezTerm (closes all windows gracefully)
@@ -592,7 +637,7 @@ local status_priority = {
 	unknown = 5, -- Unknown state
 }
 
--- Collect all Claude agents with metadata
+-- Collect all Claude agents with metadata (file-based status)
 local function get_agents()
 	local agents = {}
 
@@ -602,26 +647,29 @@ local function get_agents()
 		for _, tab in ipairs(mux_win:tabs()) do
 			for _, pane in ipairs(tab:panes()) do
 				local title = pane:get_title() or ""
-				local user_vars = pane:get_user_vars() or {}
+				local pane_id = pane:pane_id()
+
+				-- Read status from file
+				local status_data = read_claude_status(pane_id)
 
 				-- Check if this is a Claude Code pane:
-				-- 1. Has claude_status user var (set by our hooks), OR
+				-- 1. Has status file (set by our hooks), OR
 				-- 2. Title starts with ✳, OR
 				-- 3. Title contains "claude"
-				local has_claude_status = user_vars.claude_status ~= nil
+				local has_status_file = status_data ~= nil
 				local has_claude_title = title:match("^✳") or title:lower():match("claude")
 
-				if has_claude_status or has_claude_title then
-					local status = user_vars.claude_status or "unknown"
-					local start_time = user_vars.claude_start_time
-					local project = user_vars.claude_project or workspace
+				if has_status_file or has_claude_title then
+					local status = status_data and status_data.status or "unknown"
+					local start_time = status_data and status_data.start_time
+					local project = status_data and status_data.project or workspace
 
 					-- Clean title (remove ✳ prefix)
 					local clean_title = title:gsub("^✳%s*", "")
 
 					table.insert(agents, {
 						tab_id = tab:tab_id(),
-						pane_id = pane:pane_id(),
+						pane_id = pane_id,
 						workspace = workspace,
 						project = project,
 						title = clean_title,

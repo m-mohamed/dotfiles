@@ -70,7 +70,11 @@ wez-nuke() {
   rm -rf ~/.local/share/wezterm/wezterm-gui-log-*.txt 2>/dev/null
   rm -rf ~/.local/share/wezterm/wezterm-log-*.txt 2>/dev/null
 
-  echo "✅ WezTerm nuked. Open fresh when ready."
+  # Clean up Claude agent status files
+  echo "Cleaning up Claude agent status files..."
+  rm -rf ~/.cache/claude-status 2>/dev/null
+
+  echo "Done. WezTerm nuked. Open fresh when ready."
 }
 alias wez-reset='wez-nuke'
 
