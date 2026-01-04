@@ -186,6 +186,14 @@ local status_icons = {
 	unknown = "⚪",
 }
 
+-- Agent dashboard options (bar.wezterm pattern: centralized config)
+local agent_options = {
+	show_idle_in_statusbar = true, -- Show ⏸️ idle count in status bar
+	show_elapsed_time = false, -- Show elapsed time next to counts (e.g., "🤖2 5m")
+	statusbar_separator = " │ ", -- Separator between status bar sections
+	dashboard_show_idle = true, -- Show idle agents in dashboard
+}
+
 -- Helper to format elapsed time
 local function format_elapsed(start_time)
 	if not start_time then
@@ -207,10 +215,19 @@ end
 
 -- Read Claude status from file (file-based communication since hooks are detached)
 -- Pattern: JSON validation before parse (from resurrect.wezterm)
+-- Fix: Use os.getenv("HOME") instead of wezterm.home_dir for reliable path in callbacks
 local function read_claude_status(pane_id)
-	local path = wezterm.home_dir .. "/.cache/claude-status/pane-" .. tostring(pane_id) .. ".json"
+	local home = os.getenv("HOME")
+	if not home then
+		wezterm.log_error("claude-agent: HOME env var not set")
+		return nil
+	end
+
+	local path = home .. "/.cache/claude-status/pane-" .. tostring(pane_id) .. ".json"
+
 	local f = io.open(path, "r")
 	if not f then
+		-- Only log at debug level since missing files are expected for non-Claude panes
 		return nil
 	end
 
@@ -276,7 +293,11 @@ local function cleanup_stale_status_files()
 
 	-- Get current pane IDs for orphan detection
 	local current_panes = get_current_pane_ids()
-	local status_dir = wezterm.home_dir .. "/.cache/claude-status"
+	local home = os.getenv("HOME")
+	if not home then
+		return
+	end
+	local status_dir = home .. "/.cache/claude-status"
 
 	-- Read directory and remove orphaned files
 	local handle = io.popen('ls "' .. status_dir .. '" 2>/dev/null')
@@ -297,6 +318,59 @@ local function cleanup_stale_status_files()
 		"-c",
 		[[find ~/.cache/claude-status -name "pane-*.json" -type f -mmin +60 -delete 2>/dev/null]],
 	})
+end
+
+-- Count agents by status across all panes (bar.wezterm pattern: helper function)
+local function count_agents(mux_window)
+	local counts = { running = 0, blocked = 0, waiting = 0, idle = 0 }
+	for _, tab in ipairs(mux_window:tabs()) do
+		for _, pane in ipairs(tab:panes()) do
+			local status_data = read_claude_status(pane:pane_id())
+			local status = status_data and status_data.status
+			if status and counts[status] ~= nil then
+				counts[status] = counts[status] + 1
+			end
+		end
+	end
+	return counts
+end
+
+-- Build a status bar cell (bar.wezterm pattern: cell-based formatting)
+local function status_cell(icon, count, color)
+	if count <= 0 then
+		return {}
+	end
+	return {
+		{ Foreground = { Color = color } },
+		{ Text = icon .. count },
+	}
+end
+
+-- Build agent summary cells for status bar
+local function build_agent_cells(counts)
+	local cells = {}
+
+	-- Helper to append cells
+	local function append(new_cells, needs_space)
+		if #new_cells > 0 then
+			if needs_space and #cells > 0 then
+				table.insert(cells, { Text = " " })
+			end
+			for _, cell in ipairs(new_cells) do
+				table.insert(cells, cell)
+			end
+		end
+	end
+
+	append(status_cell(status_icons.running, counts.running, agent_colors.running), false)
+	append(status_cell(status_icons.blocked, counts.blocked, agent_colors.blocked), true)
+	append(status_cell(status_icons.waiting, counts.waiting, agent_colors.waiting), true)
+
+	if agent_options.show_idle_in_statusbar then
+		append(status_cell(status_icons.idle, counts.idle, agent_colors.idle), true)
+	end
+
+	return cells
 end
 
 -- Show agent state icons in tab titles with colors and elapsed time
@@ -364,73 +438,55 @@ config.quick_select_patterns = {
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Status Bar - Show Agent Summary, Workspace & Process                 ║
+-- ║ Pattern: Cell-based formatting (bar.wezterm)                         ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 wezterm.on("update-right-status", function(window, _)
 	-- Periodically clean up stale status files
 	cleanup_stale_status_files()
 
-	-- Count Claude agents by state across all panes (file-based status)
-	local running, blocked, waiting, idle = 0, 0, 0, 0
-	for _, tab in ipairs(window:mux_window():tabs()) do
-		for _, p in ipairs(tab:panes()) do
-			local status_data = read_claude_status(p:pane_id())
-			local status = status_data and status_data.status
+	local cells = {}
+	local sep = agent_options.statusbar_separator
 
-			if status == "running" then
-				running = running + 1
-			elseif status == "blocked" then
-				blocked = blocked + 1
-			elseif status == "waiting" then
-				waiting = waiting + 1
-			elseif status == "idle" then
-				idle = idle + 1
-			end
+	-- Section 1: Agent counts (using helper functions)
+	local counts = count_agents(window:mux_window())
+	local agent_cells = build_agent_cells(counts)
+	local has_agents = counts.running + counts.blocked + counts.waiting + counts.idle > 0
+
+	if has_agents then
+		for _, cell in ipairs(agent_cells) do
+			table.insert(cells, cell)
 		end
+		table.insert(cells, { Foreground = { Color = agent_colors.muted } })
+		table.insert(cells, { Text = sep })
 	end
 
-	-- Build colored agent summary using wezterm.format
-	local agent_parts = {}
-	local total = running + blocked + waiting + idle
-	if total > 0 then
-		if running > 0 then
-			table.insert(agent_parts, { Foreground = { Color = agent_colors.running } })
-			table.insert(agent_parts, { Text = "🤖" .. running })
-		end
-		if blocked > 0 then
-			table.insert(agent_parts, { Foreground = { Color = agent_colors.blocked } })
-			table.insert(agent_parts, { Text = " 🔐" .. blocked })
-		end
-		if waiting > 0 then
-			table.insert(agent_parts, { Foreground = { Color = agent_colors.waiting } })
-			table.insert(agent_parts, { Text = " 🔔" .. waiting })
-		end
-		if idle > 0 then
-			table.insert(agent_parts, { Foreground = { Color = agent_colors.idle } })
-			table.insert(agent_parts, { Text = " ⏸️" .. idle })
-		end
-		table.insert(agent_parts, { Foreground = { Color = agent_colors.fg } })
-		table.insert(agent_parts, { Text = " | " })
-	end
+	-- Section 2: Domain
+	local domain_name = window:active_pane():get_domain_name() or "local"
+	table.insert(cells, { Foreground = { Color = agent_colors.muted } })
+	table.insert(cells, { Text = "[" .. domain_name .. "]" .. sep })
 
-	local process_name = window:active_pane():get_foreground_process_name() or ""
-	process_name = process_name:gsub("%.exe$", "")
-
-	local leader_active = window:leader_is_active() and "LEADER | " or ""
-
+	-- Section 3: Workspace
 	local workspace = window:active_workspace() or ""
 	if workspace ~= "" then
-		workspace = "[" .. workspace .. "] | "
+		table.insert(cells, { Foreground = { Color = agent_colors.fg } })
+		table.insert(cells, { Text = "[" .. workspace .. "]" .. sep })
 	end
 
-	local domain_name = window:active_pane():get_domain_name() or "local"
-	local domain = "[" .. domain_name .. "] | "
+	-- Section 4: Leader indicator
+	if window:leader_is_active() then
+		table.insert(cells, { Foreground = { Color = agent_colors.waiting } })
+		table.insert(cells, { Text = "LEADER" .. sep })
+	end
 
-	-- Combine formatted agent summary with plain text
-	local plain_text = domain .. workspace .. leader_active .. process_name
-	table.insert(agent_parts, { Foreground = { Color = agent_colors.fg } })
-	table.insert(agent_parts, { Text = plain_text })
+	-- Section 5: Process name
+	local process_name = window:active_pane():get_foreground_process_name() or ""
+	process_name = process_name:gsub(".*/", ""):gsub("%.exe$", "") -- basename + strip .exe
+	if process_name ~= "" then
+		table.insert(cells, { Foreground = { Color = agent_colors.fg } })
+		table.insert(cells, { Text = process_name })
+	end
 
-	window:set_right_status(wezterm.format(agent_parts))
+	window:set_right_status(wezterm.format(cells))
 end)
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
