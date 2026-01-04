@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-01-04
+
+### Fixed
+- `wez-nuke` now uses AppleScript to gracefully quit WezTerm when run from inside
+- `wez-nuke` now cleans stale log files (`wezterm-gui-log-*.txt`, `wezterm-log-*.txt`)
+- `Ctrl+A Shift+X` now properly quits WezTerm using `QuitApplication` action
+- Claude hooks now check for `WEZTERM_PANE` before activating pane
+- Removed emojis from terminal-notifier titles (prevents encoding issues)
+
+### Changed
+- `wez-nuke` is now the primary command, `wez-reset` is an alias
+
 ## [0.4.0] - 2025-01-04
 
 ### Added

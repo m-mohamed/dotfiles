@@ -44,20 +44,35 @@ alias cc='claude'  # Claude Code CLI
 # ══════════════════════════════════════════════════════════════════════
 # Terminal (WezTerm)
 # ══════════════════════════════════════════════════════════════════════
-# Reset WezTerm - kills all processes and clears socket/state files
-wez-reset() {
-  echo "Stopping all WezTerm processes..."
-  pkill -f "wezterm" 2>/dev/null || echo "No WezTerm processes running"
+# Nuke WezTerm - graceful quit, kill mux server, clean all state
+wez-nuke() {
+  # If running inside WezTerm, use AppleScript to quit it gracefully
+  # This avoids killing our own shell with pkill
+  if [[ -n "$WEZTERM_PANE" ]]; then
+    echo "Quitting WezTerm via AppleScript..."
+    osascript -e 'quit app "WezTerm"'
+    sleep 1  # Give it a moment to quit gracefully
+  fi
 
-  echo "Cleaning up WezTerm socket files..."
-  rm -f ~/.local/share/wezterm/sock 2>/dev/null
-  rm -f ~/.local/share/wezterm/gui-sock-* 2>/dev/null
-  rm -f ~/.local/share/wezterm/pid 2>/dev/null
-  rm -f ~/.local/share/wezterm/default-* 2>/dev/null
+  # Kill any remaining processes (mux server persists after GUI closes)
+  echo "Stopping WezTerm mux server..."
+  pkill -9 -f "wezterm-mux-server" 2>/dev/null
 
-  echo "Done. Restart WezTerm for a clean slate."
+  echo "Stopping WezTerm GUI..."
+  pkill -9 -f "wezterm-gui" 2>/dev/null
+
+  # Clean up ALL state files (sockets, PID, symlinks, logs)
+  echo "Cleaning up WezTerm state..."
+  rm -rf ~/.local/share/wezterm/sock 2>/dev/null
+  rm -rf ~/.local/share/wezterm/gui-sock-* 2>/dev/null
+  rm -rf ~/.local/share/wezterm/pid 2>/dev/null
+  rm -rf ~/.local/share/wezterm/default-* 2>/dev/null
+  rm -rf ~/.local/share/wezterm/wezterm-gui-log-*.txt 2>/dev/null
+  rm -rf ~/.local/share/wezterm/wezterm-log-*.txt 2>/dev/null
+
+  echo "✅ WezTerm nuked. Open fresh when ready."
 }
-alias wez-nuke='wez-reset'
+alias wez-reset='wez-nuke'
 
 # ══════════════════════════════════════════════════════════════════════
 # Mobile (tmux for Termius/SSH access)

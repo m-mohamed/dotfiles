@@ -511,16 +511,27 @@ config.keys = {-- Basic operations
 		action = act.DetachDomain({ DomainName = "unix" }),
 	},
 	{
-		-- Nuclear reset: Detach, spawn fresh local shell, kill mux server
+		-- Nuclear reset: Quit app, kill mux server, clean all state files
 		key = "X",
 		mods = "LEADER|SHIFT",
 		action = wezterm.action_callback(function(window, pane)
-			-- Detach from unix domain first to avoid orphaned state
-			window:perform_action(act.DetachDomain({ DomainName = "unix" }), pane)
-			-- Spawn a fresh local tab (bypasses unix domain)
-			window:perform_action(act.SpawnTab("DefaultDomain"), pane)
-			-- Kill the unix mux server
-			wezterm.background_child_process({ "pkill", "-f", "wezterm-mux-server" })
+			-- Spawn background process to clean up after WezTerm quits
+			wezterm.background_child_process({
+				"zsh",
+				"-c",
+				[[
+          sleep 0.5
+          pkill -9 -f "wezterm-mux-server" 2>/dev/null
+          rm -f ~/.local/share/wezterm/sock
+          rm -f ~/.local/share/wezterm/gui-sock-*
+          rm -f ~/.local/share/wezterm/pid
+          rm -f ~/.local/share/wezterm/default-*
+          rm -f ~/.local/share/wezterm/wezterm-gui-log-*.txt
+          rm -f ~/.local/share/wezterm/wezterm-log-*.txt
+        ]],
+			})
+			-- Quit WezTerm (closes all windows gracefully)
+			window:perform_action(act.QuitApplication, pane)
 		end),
 	},
 
