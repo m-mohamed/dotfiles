@@ -602,10 +602,16 @@ local function get_agents()
 		for _, tab in ipairs(mux_win:tabs()) do
 			for _, pane in ipairs(tab:panes()) do
 				local title = pane:get_title() or ""
+				local user_vars = pane:get_user_vars() or {}
 
-				-- Check if this is a Claude Code pane (✳ prefix or claude in title)
-				if title:match("^✳") or title:lower():match("claude") then
-					local user_vars = pane:get_user_vars() or {}
+				-- Check if this is a Claude Code pane:
+				-- 1. Has claude_status user var (set by our hooks), OR
+				-- 2. Title starts with ✳, OR
+				-- 3. Title contains "claude"
+				local has_claude_status = user_vars.claude_status ~= nil
+				local has_claude_title = title:match("^✳") or title:lower():match("claude")
+
+				if has_claude_status or has_claude_title then
 					local status = user_vars.claude_status or "unknown"
 					local start_time = user_vars.claude_start_time
 					local project = user_vars.claude_project or workspace
