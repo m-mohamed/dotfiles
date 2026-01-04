@@ -2,9 +2,13 @@
 local wezterm = require("wezterm")
 local M = {}
 
--- Cache state version (increment if schema changes)
-local CACHE_VERSION = 1
+-- Cache configuration
 local MAX_CACHE_SIZE = 100 -- Maximum cached panes
+
+-- Module-local cache state (wezterm.GLOBAL doesn't support nested tables with integer keys)
+local cache = {}
+local cache_order = {}
+local last_cleanup = 0
 
 -- Default cache directory (respects XDG_CACHE_HOME) - exported for init.lua
 M.get_default_dir = function()
@@ -20,29 +24,11 @@ M.options = {
 	cleanup_interval = 300, -- 5 minutes
 }
 
--- Get or initialize cache from wezterm.GLOBAL
-local function get_state()
-	local state = wezterm.GLOBAL.claude_agent
-
-	-- Initialize or reset if version mismatch
-	if not state or state.version ~= CACHE_VERSION then
-		wezterm.GLOBAL.claude_agent = {
-			version = CACHE_VERSION,
-			cache = {},
-			cache_order = {}, -- Track insertion order for LRU
-			last_cleanup = 0,
-		}
-		state = wezterm.GLOBAL.claude_agent
-	end
-
-	return state
-end
-
 -- Evict oldest cache entries when over limit
-local function evict_old_cache_entries(state)
-	while #state.cache_order > MAX_CACHE_SIZE do
-		local oldest_id = table.remove(state.cache_order, 1)
-		state.cache[oldest_id] = nil
+local function evict_old_cache_entries()
+	while #cache_order > MAX_CACHE_SIZE do
+		local oldest_id = table.remove(cache_order, 1)
+		cache[oldest_id] = nil
 	end
 end
 
@@ -87,10 +73,9 @@ end
 
 -- Read status with caching and event emission
 M.read_cached = function(pane_id)
-	local state = get_state()
-	local cache = state.cache
 	local now = os.time()
-	local entry = cache[pane_id]
+	local key = tostring(pane_id)
+	local entry = cache[key]
 
 	-- Return cached if fresh
 	if entry and (now - entry.time) < M.options.cache_ttl then
@@ -113,10 +98,10 @@ M.read_cached = function(pane_id)
 	-- Update cache with LRU tracking
 	if not entry then
 		-- New entry - add to order tracking
-		table.insert(state.cache_order, pane_id)
-		evict_old_cache_entries(state)
+		table.insert(cache_order, key)
+		evict_old_cache_entries()
 	end
-	cache[pane_id] = { data = data, time = now }
+	cache[key] = { data = data, time = now }
 
 	return data
 end
@@ -146,14 +131,13 @@ end
 
 -- Clean up stale and orphaned status files
 M.cleanup_stale_files = function()
-	local state = get_state()
 	local now = os.time()
 
 	-- Only run cleanup periodically
-	if now - state.last_cleanup < M.options.cleanup_interval then
+	if now - last_cleanup < M.options.cleanup_interval then
 		return
 	end
-	state.last_cleanup = now
+	last_cleanup = now
 
 	-- Get current pane IDs for orphan detection
 	local current_panes = M.get_current_pane_ids()

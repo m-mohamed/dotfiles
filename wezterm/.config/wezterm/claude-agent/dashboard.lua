@@ -235,7 +235,14 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 				choices = choices,
 				fuzzy = true,
 				action = wezterm.action_callback(function(inner_window, inner_pane, id, label)
-					if not id or id:match("^sep_") then
+					-- Handle cancellation (smart_workspace_switcher pattern)
+					if not id then
+						wezterm.emit("claude-agent.dashboard.canceled", inner_window)
+						return
+					end
+
+					-- Ignore separator selections
+					if id:match("^sep_") then
 						return
 					end
 

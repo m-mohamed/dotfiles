@@ -117,6 +117,8 @@ M.register_events = function()
 
 		if not ok then
 			wezterm.log_error("claude-agent: Statusbar error: " .. tostring(err))
+			-- Emit error event for extensibility (smart_workspace_switcher pattern)
+			wezterm.emit("claude-agent.error", "statusbar", tostring(err))
 		end
 	end)
 end
