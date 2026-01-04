@@ -52,9 +52,7 @@ M.apply_to_config = function(config, opts)
 		separator = M.options.separator,
 	})
 
-	M.dashboard.setup({
-		show_idle = M.options.show_idle,
-	})
+	-- Dashboard uses auto-detected defaults, no setup needed
 
 	-- Register event handlers
 	M.statusbar.register_events()

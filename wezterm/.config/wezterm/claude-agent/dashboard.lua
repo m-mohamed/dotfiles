@@ -25,7 +25,6 @@ end
 
 -- Default options
 M.options = {
-	show_idle = true,
 	wezterm_cli_path = find_wezterm_cli(),
 }
 

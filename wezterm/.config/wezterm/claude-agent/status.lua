@@ -6,9 +6,15 @@ local M = {}
 local CACHE_VERSION = 1
 local MAX_CACHE_SIZE = 100 -- Maximum cached panes
 
+-- Default cache directory (respects XDG_CACHE_HOME)
+local function default_status_dir()
+	local xdg = os.getenv("XDG_CACHE_HOME")
+	return (xdg and xdg ~= "" and xdg or os.getenv("HOME") .. "/.cache") .. "/claude-status"
+end
+
 -- Default options (can be overridden via setup)
 M.options = {
-	status_dir = os.getenv("HOME") .. "/.cache/claude-status",
+	status_dir = default_status_dir(),
 	cache_ttl = 1, -- seconds
 	stale_threshold = 3600, -- 1 hour
 	cleanup_interval = 300, -- 5 minutes

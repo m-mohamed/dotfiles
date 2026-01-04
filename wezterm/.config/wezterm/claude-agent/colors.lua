@@ -14,8 +14,6 @@ M.status = {
 M.ui = {
 	fg = "#c0caf5", -- Default text
 	muted = "#565f89", -- Muted text
-	bg = "#1a1b26", -- Background
-	selection = "#283457", -- Selection
 }
 
 -- Status icons (Antigravity-style)
