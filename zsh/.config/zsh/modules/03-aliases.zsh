@@ -39,6 +39,7 @@ alias gitc="cz commit"
 # ══════════════════════════════════════════════════════════════════════
 alias lg='lazygit'
 alias ld='lazydocker'
+alias cc='claude'  # Claude Code CLI
 
 # ══════════════════════════════════════════════════════════════════════
 # Terminal (WezTerm)
@@ -69,6 +70,7 @@ alias tl='tmux list-sessions'  # List sessions
 alias tn='tmux new -s'  # New named session: tn fantasy
 alias tk='tmux kill-session -t'  # Kill session: tk fantasy
 alias ts='tmux switch -t'  # Switch session (from inside tmux)
+alias td='tmux detach'  # Detach from session (or Ctrl+b d)
 
 # ══════════════════════════════════════════════════════════════════════
 # Completion Definitions for Aliases
