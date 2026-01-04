@@ -164,221 +164,16 @@ wezterm.on("bell", function(window, pane)
 end)
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║ Multi-Agent Tab Title Formatting (Antigravity-inspired)              ║
+-- ║ Claude Agent Plugin - Multi-Agent Monitoring                         ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
--- Tokyo Night color palette for agent status
-local agent_colors = {
-	idle = "#565f89", -- Gray
-	running = "#7aa2f7", -- Blue
-	blocked = "#ff9e64", -- Orange
-	waiting = "#e0af68", -- Yellow
-	unknown = "#565f89", -- Gray
-	fg = "#c0caf5", -- Default text
-	muted = "#565f89", -- Muted text
-}
+local claude_agent = require("claude-agent")
 
--- Status icons (Antigravity-style)
-local status_icons = {
-	idle = "⏸️",
-	running = "🤖",
-	blocked = "🔐",
-	waiting = "🔔",
-	unknown = "⚪",
-}
-
--- Agent dashboard options (bar.wezterm pattern: centralized config)
-local agent_options = {
-	show_idle_in_statusbar = true, -- Show ⏸️ idle count in status bar
-	show_elapsed_time = false, -- Show elapsed time next to counts (e.g., "🤖2 5m")
-	statusbar_separator = " │ ", -- Separator between status bar sections
-	dashboard_show_idle = true, -- Show idle agents in dashboard
-}
-
--- Helper to format elapsed time
-local function format_elapsed(start_time)
-	if not start_time then
-		return nil
-	end
-	local start = tonumber(start_time)
-	if not start then
-		return nil
-	end
-	local elapsed = os.time() - start
-	if elapsed < 60 then
-		return string.format("%ds", elapsed)
-	elseif elapsed < 3600 then
-		return string.format("%dm", math.floor(elapsed / 60))
-	else
-		return string.format("%dh", math.floor(elapsed / 3600))
-	end
-end
-
--- Read Claude status from file (file-based communication since hooks are detached)
--- Pattern: JSON validation before parse (from resurrect.wezterm)
--- Fix: Use os.getenv("HOME") instead of wezterm.home_dir for reliable path in callbacks
-local function read_claude_status(pane_id)
-	local home = os.getenv("HOME")
-	if not home then
-		wezterm.log_error("claude-agent: HOME env var not set")
-		return nil
-	end
-
-	local path = home .. "/.cache/claude-status/pane-" .. tostring(pane_id) .. ".json"
-
-	local f = io.open(path, "r")
-	if not f then
-		-- Only log at debug level since missing files are expected for non-Claude panes
-		return nil
-	end
-
-	local content = f:read("*a")
-	f:close()
-
-	-- Validate not empty (pattern from resurrect.wezterm)
-	if not content or content == "" then
-		wezterm.log_warn("claude-agent: Empty status file for pane " .. tostring(pane_id))
-		return nil
-	end
-
-	-- Parse with pcall
-	local ok, data = pcall(wezterm.json_parse, content)
-	if not ok then
-		wezterm.log_warn("claude-agent: Invalid JSON in pane-" .. tostring(pane_id) .. ".json")
-		return nil
-	end
-
-	-- Validate expected schema
-	if type(data) ~= "table" or not data.status then
-		wezterm.log_warn("claude-agent: Missing 'status' field for pane " .. tostring(pane_id))
-		return nil
-	end
-
-	return data
-end
-
--- Track last cleanup time to avoid running too frequently
-local last_cleanup_time = 0
-
--- Get all current pane IDs
-local function get_current_pane_ids()
-	local pane_ids = {}
-	local all_windows = wezterm.mux.all_windows()
-	if not all_windows then
-		return pane_ids
-	end
-	for _, mux_win in ipairs(all_windows) do
-		local tabs = mux_win:tabs()
-		if tabs then
-			for _, tab in ipairs(tabs) do
-				local panes = tab:panes()
-				if panes then
-					for _, pane in ipairs(panes) do
-						pane_ids[tostring(pane:pane_id())] = true
-					end
-				end
-			end
-		end
-	end
-	return pane_ids
-end
-
--- Clean up stale and orphaned status files
-local function cleanup_stale_status_files()
-	local now = os.time()
-	-- Only run cleanup every 5 minutes
-	if now - last_cleanup_time < 300 then
-		return
-	end
-	last_cleanup_time = now
-
-	-- Get current pane IDs for orphan detection
-	local current_panes = get_current_pane_ids()
-	local home = os.getenv("HOME")
-	if not home then
-		return
-	end
-	local status_dir = home .. "/.cache/claude-status"
-
-	-- Read directory and remove orphaned files
-	local handle = io.popen('ls "' .. status_dir .. '" 2>/dev/null')
-	if handle then
-		for file in handle:lines() do
-			local pane_id = file:match("pane%-(%d+)%.json")
-			if pane_id and not current_panes[pane_id] then
-				-- Remove orphaned file
-				os.remove(status_dir .. "/" .. file)
-			end
-		end
-		handle:close()
-	end
-
-	-- Also clean files older than 1 hour (backup cleanup)
-	wezterm.background_child_process({
-		"zsh",
-		"-c",
-		[[find ~/.cache/claude-status -name "pane-*.json" -type f -mmin +60 -delete 2>/dev/null]],
-	})
-end
-
--- Count agents by status across all panes (bar.wezterm pattern: helper function)
-local function count_agents(mux_window)
-	local counts = { running = 0, blocked = 0, waiting = 0, idle = 0 }
-	for _, tab in ipairs(mux_window:tabs()) do
-		for _, pane in ipairs(tab:panes()) do
-			local status_data = read_claude_status(pane:pane_id())
-			local status = status_data and status_data.status
-			if status and counts[status] ~= nil then
-				counts[status] = counts[status] + 1
-			end
-		end
-	end
-	return counts
-end
-
--- Build a status bar cell (bar.wezterm pattern: cell-based formatting)
-local function status_cell(icon, count, color)
-	if count <= 0 then
-		return {}
-	end
-	return {
-		{ Foreground = { Color = color } },
-		{ Text = icon .. count },
-	}
-end
-
--- Build agent summary cells for status bar
-local function build_agent_cells(counts)
-	local cells = {}
-
-	-- Helper to append cells
-	local function append(new_cells, needs_space)
-		if #new_cells > 0 then
-			if needs_space and #cells > 0 then
-				table.insert(cells, { Text = " " })
-			end
-			for _, cell in ipairs(new_cells) do
-				table.insert(cells, cell)
-			end
-		end
-	end
-
-	append(status_cell(status_icons.running, counts.running, agent_colors.running), false)
-	append(status_cell(status_icons.blocked, counts.blocked, agent_colors.blocked), true)
-	append(status_cell(status_icons.waiting, counts.waiting, agent_colors.waiting), true)
-
-	if agent_options.show_idle_in_statusbar then
-		append(status_cell(status_icons.idle, counts.idle, agent_colors.idle), true)
-	end
-
-	return cells
-end
-
--- Show agent state icons in tab titles with colors and elapsed time
+-- Tab title formatting using plugin's status reader
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	local pane = tab.active_pane
 
-	-- Read status from file (file-based since hooks are detached processes)
-	local status_data = read_claude_status(pane.pane_id)
+	-- Read status from plugin
+	local status_data = claude_agent.status.read_cached(pane.pane_id)
 	local status = status_data and status_data.status or nil
 	local start_time = status_data and status_data.start_time or nil
 
@@ -391,14 +186,15 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 		return title
 	end
 
-	-- Get icon and color for status
-	local icon = status_icons[status] or status_icons.unknown
-	local color = agent_colors[status] or agent_colors.unknown
+	-- Get icon and color from plugin
+	local colors = claude_agent.colors
+	local icon = colors.icons[status] or colors.icons.unknown
+	local color = colors.status[status] or colors.status.unknown
 
 	-- Format elapsed time for running/blocked/waiting states
 	local elapsed_str = ""
 	if status == "running" or status == "blocked" or status == "waiting" then
-		local elapsed = format_elapsed(start_time)
+		local elapsed = claude_agent.status.format_elapsed(start_time)
 		if elapsed then
 			elapsed_str = string.format(" (%s)", elapsed)
 		end
@@ -408,22 +204,21 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	return wezterm.format({
 		{ Foreground = { Color = color } },
 		{ Text = icon .. " " },
-		{ Foreground = { Color = agent_colors.fg } },
+		{ Foreground = { Color = colors.ui.fg } },
 		{ Text = title },
-		{ Foreground = { Color = agent_colors.muted } },
+		{ Foreground = { Color = colors.ui.muted } },
 		{ Text = elapsed_str },
 	})
 end)
 
--- Cursor settings - steady, no blinking
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║ Performance & Cursor Settings                                        ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
 config.default_cursor_style = "SteadyBlock"
 config.cursor_blink_rate = 0
-
--- Performance settings
 config.front_end = "WebGpu"
 config.max_fps = 120
 config.animation_fps = 30
-config.status_update_interval = 100 -- 100ms polling for file-based status
 
 -- macOS specific - allow Cmd+click for URLs
 config.bypass_mouse_reporting_modifiers = "CMD"
@@ -437,62 +232,10 @@ config.quick_select_patterns = {
 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║ Status Bar - Show Agent Summary, Workspace & Process                 ║
--- ║ Pattern: Cell-based formatting (bar.wezterm)                         ║
--- ╚══════════════════════════════════════════════════════════════════════╝
-wezterm.on("update-right-status", function(window, _)
-	-- Periodically clean up stale status files
-	cleanup_stale_status_files()
-
-	local cells = {}
-	local sep = agent_options.statusbar_separator
-
-	-- Section 1: Agent counts (using helper functions)
-	local counts = count_agents(window:mux_window())
-	local agent_cells = build_agent_cells(counts)
-	local has_agents = counts.running + counts.blocked + counts.waiting + counts.idle > 0
-
-	if has_agents then
-		for _, cell in ipairs(agent_cells) do
-			table.insert(cells, cell)
-		end
-		table.insert(cells, { Foreground = { Color = agent_colors.muted } })
-		table.insert(cells, { Text = sep })
-	end
-
-	-- Section 2: Domain
-	local domain_name = window:active_pane():get_domain_name() or "local"
-	table.insert(cells, { Foreground = { Color = agent_colors.muted } })
-	table.insert(cells, { Text = "[" .. domain_name .. "]" .. sep })
-
-	-- Section 3: Workspace
-	local workspace = window:active_workspace() or ""
-	if workspace ~= "" then
-		table.insert(cells, { Foreground = { Color = agent_colors.fg } })
-		table.insert(cells, { Text = "[" .. workspace .. "]" .. sep })
-	end
-
-	-- Section 4: Leader indicator
-	if window:leader_is_active() then
-		table.insert(cells, { Foreground = { Color = agent_colors.waiting } })
-		table.insert(cells, { Text = "LEADER" .. sep })
-	end
-
-	-- Section 5: Process name
-	local process_name = window:active_pane():get_foreground_process_name() or ""
-	process_name = process_name:gsub(".*/", ""):gsub("%.exe$", "") -- basename + strip .exe
-	if process_name ~= "" then
-		table.insert(cells, { Foreground = { Color = agent_colors.fg } })
-		table.insert(cells, { Text = process_name })
-	end
-
-	window:set_right_status(wezterm.format(cells))
-end)
-
--- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Key Bindings                                                         ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-config.keys = {-- Basic operations
+config.keys = {
+	-- Basic operations
 	{
 		key = "c",
 		mods = "CMD",
@@ -742,309 +485,13 @@ config.launch_menu = {
 }
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║ Agent Dashboard - View all Claude agents across workspaces           ║
+-- ║ Apply Claude Agent Plugin (must be after config.keys is defined)     ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-
--- Priority order for agent status (attention-needed first)
-local status_priority = {
-	blocked = 1, -- Needs permission
-	waiting = 2, -- Needs user input
-	running = 3, -- Working
-	idle = 4, -- Done
-	unknown = 5, -- Unknown state
-}
-
--- Collect all Claude agents with metadata (file-based status)
-local function get_agents()
-	local agents = {}
-
-	-- Defensive: check mux.all_windows() exists and returns valid data
-	local all_windows = wezterm.mux.all_windows()
-	if not all_windows then
-		return agents
-	end
-
-	for _, mux_win in ipairs(all_windows) do
-		local workspace = mux_win:get_workspace() or "default"
-		local tabs = mux_win:tabs()
-		if not tabs then
-			goto continue_window
-		end
-
-		for _, tab in ipairs(tabs) do
-			local panes = tab:panes()
-			if not panes then
-				goto continue_tab
-			end
-
-			for _, pane in ipairs(panes) do
-				local title = pane:get_title() or ""
-				local pane_id = pane:pane_id()
-
-				-- Read status from file
-				local status_data = read_claude_status(pane_id)
-
-				-- Check if this is a Claude Code pane:
-				-- 1. Has status file (set by our hooks), OR
-				-- 2. Title starts with ✳, OR
-				-- 3. Title contains "claude"
-				local has_status_file = status_data ~= nil
-				local has_claude_title = title:match("^✳") or title:lower():match("claude")
-
-				if has_status_file or has_claude_title then
-					local status = status_data and status_data.status or "unknown"
-					local start_time = status_data and status_data.start_time
-					local project = status_data and status_data.project or workspace
-
-					-- Clean title (remove ✳ prefix)
-					local clean_title = title:gsub("^✳%s*", "")
-
-					table.insert(agents, {
-						tab_id = tab:tab_id(),
-						pane_id = pane_id,
-						workspace = workspace,
-						project = project,
-						title = clean_title,
-						status = status,
-						start_time = start_time,
-						priority = status_priority[status] or 5,
-					})
-				end
-			end
-			::continue_tab::
-		end
-		::continue_window::
-	end
-
-	-- Sort by priority (blocked → waiting → running → idle)
-	table.sort(agents, function(a, b)
-		if a.priority ~= b.priority then
-			return a.priority < b.priority
-		end
-		return (a.workspace or "") < (b.workspace or "")
-	end)
-
-	return agents
-end
-
--- Build dashboard choices with separators and colors
-local function get_agent_dashboard_choices()
-	local agents = get_agents()
-	local choices = {}
-	local counts = { blocked = 0, waiting = 0, running = 0, idle = 0 }
-	local last_status = nil
-
-	-- Count agents by status
-	for _, agent in ipairs(agents) do
-		if counts[agent.status] then
-			counts[agent.status] = counts[agent.status] + 1
-		end
-	end
-
-	-- Build choices with separators
-	for _, agent in ipairs(agents) do
-		-- Add separator when status changes
-		if agent.status ~= last_status then
-			local sep_label = ""
-			if agent.status == "blocked" then
-				sep_label = "─── 🔐 NEEDS PERMISSION ─────────────"
-			elseif agent.status == "waiting" then
-				sep_label = "─── 🔔 NEEDS INPUT ──────────────────"
-			elseif agent.status == "running" then
-				sep_label = "─── 🤖 RUNNING ──────────────────────"
-			elseif agent.status == "idle" then
-				sep_label = "─── ⏸️ IDLE ──────────────────────────"
-			end
-
-			if sep_label ~= "" then
-				table.insert(choices, {
-					id = "sep_" .. agent.status,
-					label = wezterm.format({
-						{ Foreground = { Color = agent_colors.muted } },
-						{ Text = sep_label },
-					}),
-				})
-			end
-			last_status = agent.status
-		end
-
-		-- Format elapsed time
-		local elapsed_str = ""
-		if agent.start_time then
-			local elapsed = format_elapsed(agent.start_time)
-			if elapsed then
-				elapsed_str = " (" .. elapsed .. ")"
-			end
-		end
-
-		-- Get status icon and color
-		local icon = status_icons[agent.status] or status_icons.unknown
-		local color = agent_colors[agent.status] or agent_colors.unknown
-
-		-- Build formatted label
-		local label_parts = {
-			{ Foreground = { Color = color } },
-			{ Text = icon .. " " },
-			{ Foreground = { Color = agent_colors.muted } },
-			{ Text = "[" .. agent.workspace .. "] " },
-			{ Foreground = { Color = agent_colors.fg } },
-			{ Text = agent.title },
-			{ Foreground = { Color = agent_colors.muted } },
-			{ Text = elapsed_str },
-		}
-
-		-- Add background highlight for attention-needed agents
-		if agent.status == "blocked" or agent.status == "waiting" then
-			table.insert(label_parts, 1, { Background = { Color = "#2a2a3d" } })
-		end
-
-		table.insert(choices, {
-			id = string.format("%d:%d:%s", agent.tab_id, agent.pane_id, agent.workspace),
-			label = wezterm.format(label_parts),
-		})
-	end
-
-	return choices, counts
-end
-
--- Agent Dashboard action (wrapped in pcall for error visibility)
--- Pattern: Event-based monitoring (from resurrect.wezterm)
-local agent_dashboard = wezterm.action_callback(function(window, pane)
-	local ok, err = pcall(function()
-		local choices, counts = get_agent_dashboard_choices()
-
-		-- Calculate total for logging
-		local total = counts.blocked + counts.waiting + counts.running + counts.idle
-		wezterm.log_info("claude-agent: Dashboard opened, found " .. total .. " agents")
-
-		-- Emit custom event for monitoring
-		wezterm.emit("claude-agent.dashboard-opened", total, counts)
-
-		if #choices == 0 then
-			window:toast_notification("Agent Dashboard", "No Claude agents found", nil, 3000)
-			return
-		end
-
-		-- Build summary for title
-		local summary_parts = {}
-		if counts.blocked > 0 then
-			table.insert(summary_parts, counts.blocked .. " blocked")
-		end
-		if counts.waiting > 0 then
-			table.insert(summary_parts, counts.waiting .. " waiting")
-		end
-		if counts.running > 0 then
-			table.insert(summary_parts, counts.running .. " running")
-		end
-		if counts.idle > 0 then
-			table.insert(summary_parts, counts.idle .. " idle")
-		end
-		local summary = table.concat(summary_parts, ", ")
-
-		window:perform_action(
-			act.InputSelector({
-				title = "Agent Dashboard (" .. summary .. ")",
-				description = "Select an agent to jump to (/ to search)",
-				choices = choices,
-				fuzzy = true,
-				action = wezterm.action_callback(function(inner_window, inner_pane, id, label)
-					if not id or id:match("^sep_") then
-						return -- Ignore separator clicks
-					end
-
-					-- Parse the id: "tab_id:pane_id:workspace"
-					local tab_id, pane_id, workspace = id:match("(%d+):(%d+):(.+)")
-					tab_id = tonumber(tab_id)
-					pane_id = tonumber(pane_id)
-
-					-- Switch to workspace first
-					if workspace then
-						inner_window:perform_action(act.SwitchToWorkspace({ name = workspace }), inner_pane)
-					end
-
-					-- Then activate the specific pane
-					if pane_id then
-						wezterm.run_child_process({
-							"/opt/homebrew/bin/wezterm",
-							"cli",
-							"activate-pane",
-							"--pane-id",
-							tostring(pane_id),
-						})
-					end
-				end),
-			}),
-			pane
-		)
-	end)
-
-	if not ok then
-		window:toast_notification("Dashboard Error", tostring(err), nil, 5000)
-		wezterm.log_error("claude-agent: Dashboard error: " .. tostring(err))
-		-- Emit error event for custom handling
-		wezterm.emit("claude-agent.error", "dashboard", tostring(err))
-	end
-end)
-
--- Jump to next agent that needs attention (blocked or waiting)
-local jump_to_next_waiting = wezterm.action_callback(function(window, pane)
-	local ok, err = pcall(function()
-		local agents = get_agents()
-		wezterm.log_info("claude-agent: Jump looking for attention-needed agents in " .. #agents .. " total")
-
-		-- Find first agent that needs attention
-		for _, agent in ipairs(agents) do
-			if agent.status == "blocked" or agent.status == "waiting" then
-				wezterm.log_info("claude-agent: Jumping to " .. agent.status .. " agent in " .. (agent.workspace or "?"))
-
-				-- Switch to workspace
-				if agent.workspace then
-					window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)
-				end
-
-				-- Activate the pane
-				if agent.pane_id then
-					wezterm.run_child_process({
-						"/opt/homebrew/bin/wezterm",
-						"cli",
-						"activate-pane",
-						"--pane-id",
-						tostring(agent.pane_id),
-					})
-				end
-
-				window:toast_notification(
-					"Agent Found",
-					string.format("%s in %s", status_icons[agent.status] or "?", agent.workspace or "?"),
-					nil,
-					2000
-				)
-				return
-			end
-		end
-
-		window:toast_notification("No Agents", "No agents need attention", nil, 2000)
-	end)
-
-	if not ok then
-		window:toast_notification("Jump Error", tostring(err), nil, 5000)
-		wezterm.log_error("claude-agent: Jump error: " .. tostring(err))
-		wezterm.emit("claude-agent.error", "jump", tostring(err))
-	end
-end)
-
--- Add Agent Dashboard keybinding (Leader + g for "agents")
-table.insert(config.keys, {
-	key = "g",
-	mods = "LEADER",
-	action = agent_dashboard,
-})
-
--- Add Jump to Next Waiting keybinding (Leader + n for "next")
-table.insert(config.keys, {
-	key = "n",
-	mods = "LEADER",
-	action = jump_to_next_waiting,
+claude_agent.apply_to_config(config, {
+	show_idle = true,
+	separator = " │ ",
+	cache_ttl = 1,
+	status_update_interval = 500,
 })
 
 return config
