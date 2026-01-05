@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[[ -n $WEZTERM_PANE ]] && mkdir -p ~/.cache/claude-status && printf '{\"status\":\"running\",\"project\":\"%s\",\"start_time\":%s,\"pane_id\":\"%s\"}' \"${PWD##*/}\" \"$(date +%s)\" \"$WEZTERM_PANE\" > ~/.cache/claude-status/pane-$WEZTERM_PANE.json || true",
+            "command": "[[ -n $WEZTERM_PANE ]] && mkdir -p ~/.cache/claude-status && printf '{\"status\":\"working\",\"project\":\"%s\",\"start_time\":%s,\"pane_id\":\"%s\"}' \"${PWD##*/}\" \"$(date +%s)\" \"$WEZTERM_PANE\" > ~/.cache/claude-status/pane-$WEZTERM_PANE.json || true",
             "timeout": 5
           }
         ]
@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[[ -n $WEZTERM_PANE ]] && mkdir -p ~/.cache/claude-status && printf '{\"status\":\"blocked\",\"project\":\"%s\",\"start_time\":%s,\"pane_id\":\"%s\"}' \"${PWD##*/}\" \"$(date +%s)\" \"$WEZTERM_PANE\" > ~/.cache/claude-status/pane-$WEZTERM_PANE.json && terminal-notifier -title 'Permission Needed' -message \"Approve in ${PWD##*/}\" -group \"$PWD:perm\" -sound Basso -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm || true",
+            "command": "[[ -n $WEZTERM_PANE ]] && mkdir -p ~/.cache/claude-status && printf '{\"status\":\"attention\",\"attention_type\":\"permission\",\"project\":\"%s\",\"start_time\":%s,\"pane_id\":\"%s\"}' \"${PWD##*/}\" \"$(date +%s)\" \"$WEZTERM_PANE\" > ~/.cache/claude-status/pane-$WEZTERM_PANE.json && terminal-notifier -title 'Permission Needed' -message \"Approve in ${PWD##*/}\" -group \"$PWD:perm\" -sound Basso -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm || true",
             "timeout": 10
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[[ -n $WEZTERM_PANE ]] && mkdir -p ~/.cache/claude-status && printf '{\"status\":\"waiting\",\"project\":\"%s\",\"start_time\":%s,\"pane_id\":\"%s\"}' \"${PWD##*/}\" \"$(date +%s)\" \"$WEZTERM_PANE\" > ~/.cache/claude-status/pane-$WEZTERM_PANE.json && terminal-notifier -title 'Claude Waiting' -message \"Needs input in ${PWD##*/}\" -group \"$PWD:input\" -sound Basso -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm || true",
+            "command": "[[ -n $WEZTERM_PANE ]] && mkdir -p ~/.cache/claude-status && printf '{\"status\":\"attention\",\"attention_type\":\"input\",\"project\":\"%s\",\"start_time\":%s,\"pane_id\":\"%s\"}' \"${PWD##*/}\" \"$(date +%s)\" \"$WEZTERM_PANE\" > ~/.cache/claude-status/pane-$WEZTERM_PANE.json && terminal-notifier -title 'Claude Waiting' -message \"Needs input in ${PWD##*/}\" -group \"$PWD:input\" -sound Basso -execute \"/opt/homebrew/bin/wezterm cli activate-pane --pane-id $WEZTERM_PANE\" -activate com.github.wez.wezterm || true",
             "timeout": 10
           }
         ]

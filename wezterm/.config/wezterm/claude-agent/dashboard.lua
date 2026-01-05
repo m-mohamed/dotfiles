@@ -29,12 +29,12 @@ M.options = {
 }
 
 -- Priority order for agent status (attention-needed first)
+-- 3-state system: attention → working → idle
 local status_priority = {
-	blocked = 1,
-	waiting = 2,
-	running = 3,
-	idle = 4,
-	unknown = 5,
+	attention = 1,
+	working = 2,
+	idle = 3,
+	unknown = 4,
 }
 
 -- Setup with user options
@@ -117,10 +117,11 @@ M.get_agents = function()
 end
 
 -- Build dashboard choices with separators and colors
+-- 3-state system: attention (🔔), working (🤖), idle (⏸️)
 M.get_choices = function()
 	local agents = M.get_agents()
 	local choices = {}
-	local counts = { blocked = 0, waiting = 0, running = 0, idle = 0 }
+	local counts = { attention = 0, working = 0, idle = 0 }
 	local last_status = nil
 
 	-- Count agents by status
@@ -135,12 +136,10 @@ M.get_choices = function()
 		-- Add separator when status changes
 		if agent.status ~= last_status then
 			local sep_label = ""
-			if agent.status == "blocked" then
-				sep_label = "─── 🔐 NEEDS PERMISSION ────────────"
-			elseif agent.status == "waiting" then
-				sep_label = "─── 🔔 NEEDS INPUT ─────────────────"
-			elseif agent.status == "running" then
-				sep_label = "─── 🤖 RUNNING ─────────────────────"
+			if agent.status == "attention" then
+				sep_label = "─── 🔔 NEEDS ATTENTION ─────────────"
+			elseif agent.status == "working" then
+				sep_label = "─── 🤖 WORKING ─────────────────────"
 			elseif agent.status == "idle" then
 				sep_label = "─── ⏸️  IDLE ───────────────────────"
 			end
@@ -183,7 +182,7 @@ M.get_choices = function()
 		}
 
 		-- Add background highlight for attention-needed agents
-		if agent.status == "blocked" or agent.status == "waiting" then
+		if agent.status == "attention" then
 			table.insert(label_parts, 1, { Background = { Color = "#2a2a3d" } })
 		end
 
@@ -201,7 +200,7 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
 		local choices, counts = M.get_choices()
 
-		local total = counts.blocked + counts.waiting + counts.running + counts.idle
+		local total = counts.attention + counts.working + counts.idle
 		wezterm.log_info("claude-agent: Dashboard opened, found " .. total .. " agents")
 
 		-- Emit event
@@ -212,16 +211,13 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 			return
 		end
 
-		-- Build summary for title
+		-- Build summary for title (3-state system)
 		local summary_parts = {}
-		if counts.blocked > 0 then
-			table.insert(summary_parts, counts.blocked .. " blocked")
+		if counts.attention > 0 then
+			table.insert(summary_parts, counts.attention .. " attention")
 		end
-		if counts.waiting > 0 then
-			table.insert(summary_parts, counts.waiting .. " waiting")
-		end
-		if counts.running > 0 then
-			table.insert(summary_parts, counts.running .. " running")
+		if counts.working > 0 then
+			table.insert(summary_parts, counts.working .. " working")
 		end
 		if counts.idle > 0 then
 			table.insert(summary_parts, counts.idle .. " idle")
@@ -280,14 +276,14 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 	end
 end)
 
--- Jump to next agent that needs attention
+-- Jump to next agent that needs attention (3-state system)
 M.jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
 		local agents = M.get_agents()
 
 		for _, agent in ipairs(agents) do
-			if agent.status == "blocked" or agent.status == "waiting" then
-				wezterm.log_info("claude-agent: Jumping to " .. agent.status .. " agent")
+			if agent.status == "attention" then
+				wezterm.log_info("claude-agent: Jumping to attention agent")
 
 				if agent.workspace then
 					window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)

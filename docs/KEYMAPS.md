@@ -773,7 +773,7 @@ q                   # Hide terminal (when in normal mode)
 
 ### Obsidian Note-Taking
 
-Your Slipbox vault at `~/obsidian/Slipbox` integrated with LazyVim.
+Your slipbox vault at `~/obsidian/slipbox` integrated with LazyVim.
 
 #### Daily Notes Workflow
 
@@ -1551,17 +1551,16 @@ Ctrl+0              # Reset font size
 
 ```vim
 Ctrl+a → g          # Open agent dashboard (fuzzy search)
-Ctrl+a → n          # Jump to next waiting agent
+Ctrl+a → n          # Jump to next agent needing attention
 ```
 
-Status bar shows: 🤖 (running), 🔐 (blocked), 🔔 (waiting), ⏸️ (idle)
+Status bar shows: 🤖 (working), 🔔 (attention), ⏸️ (idle)
 
 ### Configuration
 
 - Font: JetBrainsMono Nerd Font, size 22
 - Color scheme: Tokyo Night
 - 10,000 line scrollback
-- Pane focus follows mouse
 - Unix domain for session persistence
 
 ---
@@ -1762,7 +1761,7 @@ Space qS            # Choose from session list
 - **File Explorer**: Snacks explorer
 - **Terminal**: Snacks terminal
 - **Theme**: Tokyo Night (night variant)
-- **Notes**: Obsidian.nvim (Slipbox vault)
+- **Notes**: Obsidian.nvim (slipbox vault)
 
 **Workflow Distribution:**
 
@@ -1789,7 +1788,7 @@ Space qS            # Choose from session list
 - **Neovim**: `~/.config/nvim/`
 - **WezTerm**: `~/.config/wezterm/wezterm.lua`
 - **Aerospace**: `~/.config/aerospace/aerospace.toml`
-- **Obsidian**: `~/obsidian/Slipbox/`
+- **Obsidian**: `~/obsidian/slipbox/`
 
 All managed via GNU Stow from `~/dotfiles`.
 

@@ -174,8 +174,9 @@ M.cleanup_stale_files = function()
 end
 
 -- Count agents by status across all panes in a mux window
+-- 3-state system: working, attention, idle
 M.count_agents = function(mux_window)
-	local counts = { running = 0, blocked = 0, waiting = 0, idle = 0 }
+	local counts = { working = 0, attention = 0, idle = 0 }
 	local tabs = mux_window:tabs()
 	if not tabs then
 		return counts
@@ -185,9 +186,11 @@ M.count_agents = function(mux_window)
 		if panes then
 			for _, pane in ipairs(panes) do
 				local data = M.read_cached(pane:pane_id())
-				local status = data and data.status
-				if status and counts[status] ~= nil then
-					counts[status] = counts[status] + 1
+				local agent_status = data and data.status
+				if agent_status then
+					if counts[agent_status] ~= nil then
+						counts[agent_status] = counts[agent_status] + 1
+					end
 				end
 			end
 		end

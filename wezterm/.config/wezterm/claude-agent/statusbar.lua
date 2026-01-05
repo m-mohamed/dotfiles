@@ -32,7 +32,7 @@ local function status_cell(icon, count, color)
 	}
 end
 
--- Build agent summary cells
+-- Build agent summary cells (3-state system: working, attention, idle)
 M.build_agent_cells = function(counts)
 	local cells = {}
 
@@ -47,9 +47,9 @@ M.build_agent_cells = function(counts)
 		end
 	end
 
-	append(status_cell(colors.icons.running, counts.running, colors.status.running), false)
-	append(status_cell(colors.icons.blocked, counts.blocked, colors.status.blocked), true)
-	append(status_cell(colors.icons.waiting, counts.waiting, colors.status.waiting), true)
+	-- 3-state display: working 🤖, attention 🔔, idle ⏸️
+	append(status_cell(colors.icons.working, counts.working, colors.status.working), false)
+	append(status_cell(colors.icons.attention, counts.attention, colors.status.attention), true)
 
 	if M.options.show_idle then
 		append(status_cell(colors.icons.idle, counts.idle, colors.status.idle), true)
@@ -69,10 +69,10 @@ M.register_events = function()
 			local cells = {}
 			local sep = M.options.separator
 
-			-- Section 1: Agent counts
+			-- Section 1: Agent counts (3-state system)
 			local counts = status.count_agents(window:mux_window())
 			local agent_cells = M.build_agent_cells(counts)
-			local has_agents = counts.running + counts.blocked + counts.waiting + counts.idle > 0
+			local has_agents = counts.working + counts.attention + counts.idle > 0
 
 			if has_agents then
 				for _, cell in ipairs(agent_cells) do
