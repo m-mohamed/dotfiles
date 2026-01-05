@@ -17,7 +17,6 @@ config.use_dead_keys = false
 -- This allows Alt+key combinations to work properly in terminal applications
 config.send_composed_key_when_left_alt_is_pressed = false
 config.send_composed_key_when_right_alt_is_pressed = false
-config.pane_focus_follows_mouse = true
 config.scrollback_lines = 10000
 config.inactive_pane_hsb = {
 	saturation = 0.8,
@@ -127,17 +126,8 @@ config.mouse_bindings = {
 		mods = "NONE",
 		action = act.PasteFrom("Clipboard"),
 	},
-	-- Ctrl+scroll to zoom
-	{
-		event = { Down = { streak = 1, button = { WheelUp = 1 } } },
-		mods = "CTRL",
-		action = act.IncreaseFontSize,
-	},
-	{
-		event = { Down = { streak = 1, button = { WheelDown = 1 } } },
-		mods = "CTRL",
-		action = act.DecreaseFontSize,
-	},
+	-- NOTE: Ctrl+scroll zoom removed - too easy to trigger accidentally with Ctrl+A
+	-- Use Ctrl+/- or Ctrl+0 for font size changes instead
 }
 
 -- Disable audible bell, use visual bell
@@ -244,6 +234,7 @@ config.keys = {
 		mods = "CMD",
 		action = act.CopyTo("Clipboard"),
 	},
+	-- Shift+Enter sends ESC+Enter (useful for some apps that need literal newline)
 	{
 		key = "Enter",
 		mods = "SHIFT",
