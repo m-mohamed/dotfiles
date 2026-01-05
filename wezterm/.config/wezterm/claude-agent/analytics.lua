@@ -165,9 +165,8 @@ M.register_events = function()
 	wezterm.on("claude-agent.dashboard.opened", function(window, total, counts)
 		M.log_dashboard("opened", {
 			agents = total,
-			running = counts.running or 0,
-			blocked = counts.blocked or 0,
-			waiting = counts.waiting or 0,
+			working = counts.working or 0,
+			attention = counts.attention or 0,
 			idle = counts.idle or 0,
 		})
 	end)

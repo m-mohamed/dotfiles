@@ -37,6 +37,31 @@ local status_priority = {
 	unknown = 4,
 }
 
+-- Get panes from wezterm CLI (returns correct pane_ids that match $WEZTERM_PANE)
+-- This is needed because mux.all_windows():pane_id() returns internal mux IDs
+-- which differ from the shell's $WEZTERM_PANE environment variable
+-- NOTE: Uses run_child_process (not io.popen) to avoid blocking GUI thread
+local function get_cli_panes()
+	local cli_path = M.options.wezterm_cli_path
+	local success, stdout, stderr = wezterm.run_child_process({ cli_path, "cli", "list", "--format", "json" })
+	if not success then
+		wezterm.log_warn("claude-agent: Failed to run wezterm cli list: " .. (stderr or "unknown error"))
+		return nil
+	end
+
+	if not stdout or stdout == "" then
+		return nil
+	end
+
+	local ok, panes = pcall(wezterm.json_parse, stdout)
+	if not ok or type(panes) ~= "table" then
+		wezterm.log_warn("claude-agent: Failed to parse wezterm cli list output")
+		return nil
+	end
+
+	return panes
+end
+
 -- Setup with user options
 M.setup = function(opts)
 	if opts then
@@ -49,63 +74,57 @@ M.setup = function(opts)
 end
 
 -- Collect all Claude agents with metadata
+-- Uses wezterm CLI for pane enumeration to get correct pane_ids that match $WEZTERM_PANE
 M.get_agents = function()
 	local agents = {}
 
-	local all_windows = wezterm.mux.all_windows()
-	if not all_windows then
-		return agents
+	-- Clear status cache to ensure fresh reads (pane IDs are unstable with Unix domains)
+	status.clear_cache()
+
+	-- Get panes from CLI (correct pane_ids)
+	local cli_panes = get_cli_panes()
+	if not cli_panes then
+		wezterm.log_warn("claude-agent: CLI pane enumeration failed")
+		cli_panes = {}
 	end
 
-	for _, mux_win in ipairs(all_windows) do
-		local workspace = mux_win:get_workspace() or "default"
-		local tabs = mux_win:tabs()
-		if not tabs then
-			goto continue_window
+	for _, cli_pane in ipairs(cli_panes) do
+		local pane_id = cli_pane.pane_id
+		local workspace = cli_pane.workspace or "default"
+		local title = cli_pane.title or ""
+		local tab_id = cli_pane.tab_id or 0
+
+		-- Read status file using CLI's pane_id (matches $WEZTERM_PANE)
+		local status_data = status.read_cached(pane_id)
+
+		-- Check if this is a Claude Code pane
+		local has_status_file = status_data ~= nil
+		local has_claude_title = title:match("^✳")
+			or title:lower():match("claude")
+			or title:match("^%d+%.%d+%.%d+$") -- version like "2.0.75"
+
+		if has_status_file or has_claude_title then
+			local agent_status = (status_data and status_data.status) or "unknown"
+			local start_time = status_data and status_data.start_time
+			local project = status_data and status_data.project or workspace
+
+			-- Clean title (remove ✳ prefix)
+			local clean_title = title:gsub("^✳%s*", "")
+
+			table.insert(agents, {
+				tab_id = tab_id,
+				pane_id = pane_id,
+				workspace = workspace,
+				project = project,
+				title = clean_title,
+				status = agent_status,
+				start_time = start_time,
+				priority = status_priority[agent_status] or 5,
+			})
 		end
-
-		for _, tab in ipairs(tabs) do
-			local panes = tab:panes()
-			if not panes then
-				goto continue_tab
-			end
-
-			for _, pane in ipairs(panes) do
-				local title = pane:get_title() or ""
-				local pane_id = pane:pane_id()
-
-				local status_data = status.read_cached(pane_id)
-
-				-- Check if this is a Claude Code pane
-				local has_status_file = status_data ~= nil
-				local has_claude_title = title:match("^✳") or title:lower():match("claude")
-
-				if has_status_file or has_claude_title then
-					local agent_status = status_data and status_data.status or "unknown"
-					local start_time = status_data and status_data.start_time
-					local project = status_data and status_data.project or workspace
-
-					-- Clean title (remove ✳ prefix)
-					local clean_title = title:gsub("^✳%s*", "")
-
-					table.insert(agents, {
-						tab_id = tab:tab_id(),
-						pane_id = pane_id,
-						workspace = workspace,
-						project = project,
-						title = clean_title,
-						status = agent_status,
-						start_time = start_time,
-						priority = status_priority[agent_status] or 5,
-					})
-				end
-			end
-			::continue_tab::
-		end
-		::continue_window::
 	end
 
-	-- Sort by priority (blocked → waiting → running → idle)
+	-- Sort by priority (attention → working → idle → unknown)
 	table.sort(agents, function(a, b)
 		if a.priority ~= b.priority then
 			return a.priority < b.priority

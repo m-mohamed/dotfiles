@@ -8,7 +8,7 @@ local MAX_CACHE_SIZE = 100 -- Maximum cached panes
 -- Module-local cache state (wezterm.GLOBAL doesn't support nested tables with integer keys)
 local cache = {}
 local cache_order = {}
-local last_cleanup = 0
+local last_cleanup = os.time() -- Delay first cleanup to prevent startup deadlock
 
 -- Default cache directory (respects XDG_CACHE_HOME) - exported for init.lua
 M.get_default_dir = function()
@@ -32,6 +32,61 @@ local function evict_old_cache_entries()
 	end
 end
 
+-- Clear entire cache (call before dashboard to ensure fresh reads)
+-- Needed because pane IDs are unstable with Unix domains
+M.clear_cache = function()
+	cache = {}
+	cache_order = {}
+end
+
+-- Detect wezterm CLI path (same as dashboard.lua)
+local function find_wezterm_cli()
+	local paths = {
+		"/opt/homebrew/bin/wezterm",
+		"/usr/local/bin/wezterm",
+		"/usr/bin/wezterm",
+	}
+	for _, path in ipairs(paths) do
+		local f = io.open(path, "r")
+		if f then
+			f:close()
+			return path
+		end
+	end
+	return "wezterm"
+end
+
+local WEZTERM_CLI = find_wezterm_cli()
+
+-- Get pane IDs from CLI (matches $WEZTERM_PANE, unlike Lua pane:pane_id())
+-- Returns a set table { ["0"] = true, ["1"] = true, ... }
+-- NOTE: Uses run_child_process (not io.popen) to avoid blocking GUI thread
+local function get_cli_pane_ids()
+	local pane_ids = {}
+	local success, stdout, stderr = wezterm.run_child_process({ WEZTERM_CLI, "cli", "list", "--format", "json" })
+	if not success then
+		wezterm.log_warn("claude-agent: Failed to run wezterm cli list: " .. (stderr or "unknown"))
+		return pane_ids
+	end
+
+	if not stdout or stdout == "" then
+		return pane_ids
+	end
+
+	local ok, panes = pcall(wezterm.json_parse, stdout)
+	if not ok or type(panes) ~= "table" then
+		return pane_ids
+	end
+
+	for _, pane in ipairs(panes) do
+		if pane.pane_id then
+			pane_ids[tostring(pane.pane_id)] = true
+		end
+	end
+
+	return pane_ids
+end
+
 -- Setup with user options
 M.setup = function(opts)
 	if opts then
@@ -41,6 +96,21 @@ M.setup = function(opts)
 			end
 		end
 	end
+end
+
+-- Read status from user vars (instant, set via OSC 1337)
+-- Returns status string ("working", "attention", "idle") or nil
+M.read_user_var = function(pane)
+	if not pane then
+		return nil
+	end
+	local ok, user_vars = pcall(function()
+		return pane:get_user_vars()
+	end)
+	if ok and user_vars and user_vars.claude_status then
+		return user_vars.claude_status
+	end
+	return nil
 end
 
 -- Read status from file (raw, no caching)
@@ -77,12 +147,16 @@ M.read_cached = function(pane_id)
 	local key = tostring(pane_id)
 	local entry = cache[key]
 
-	-- Return cached if fresh
+	-- Return cached if fresh AND data exists (don't cache stale data when files change)
 	if entry and (now - entry.time) < M.options.cache_ttl then
-		return entry.data
+		-- If we have cached data, verify file still exists before returning
+		if entry.data then
+			return entry.data
+		end
+		-- If cached nil, always re-read (files might have been created)
 	end
 
-	-- Read fresh
+	-- Read fresh (always re-read when cache has nil or is stale)
 	local data = M.read_file(pane_id)
 	local old_status = entry and entry.data and entry.data.status
 	local new_status = data and data.status
@@ -90,7 +164,7 @@ M.read_cached = function(pane_id)
 	-- Emit events on status change
 	if old_status ~= new_status then
 		wezterm.emit("claude-agent.status.changed", pane_id, old_status, new_status)
-		if new_status == "blocked" or new_status == "waiting" then
+		if new_status == "attention" then
 			wezterm.emit("claude-agent.status.blocked", pane_id, data)
 		end
 	end
@@ -106,27 +180,10 @@ M.read_cached = function(pane_id)
 	return data
 end
 
--- Get all current pane IDs
+-- Get all current pane IDs (uses CLI for correct IDs that match $WEZTERM_PANE)
 M.get_current_pane_ids = function()
-	local pane_ids = {}
-	local all_windows = wezterm.mux.all_windows()
-	if not all_windows then
-		return pane_ids
-	end
-	for _, mux_win in ipairs(all_windows) do
-		local tabs = mux_win:tabs()
-		if tabs then
-			for _, tab in ipairs(tabs) do
-				local panes = tab:panes()
-				if panes then
-					for _, pane in ipairs(panes) do
-						pane_ids[tostring(pane:pane_id())] = true
-					end
-				end
-			end
-		end
-	end
-	return pane_ids
+	-- Use CLI to get correct pane IDs (mux pane:pane_id() returns different values)
+	return get_cli_pane_ids()
 end
 
 -- Clean up stale and orphaned status files
@@ -139,26 +196,27 @@ M.cleanup_stale_files = function()
 	end
 	last_cleanup = now
 
-	-- Get current pane IDs for orphan detection
-	local current_panes = M.get_current_pane_ids()
+	-- Get current pane IDs from CLI (matches $WEZTERM_PANE used in status filenames)
+	local current_panes = get_cli_pane_ids()
 
-	-- Read directory and remove orphaned files
-	-- Validate status_dir path (prevent shell injection)
+	-- Read directory and remove orphaned files using wezterm.read_dir (no subprocess)
 	local status_dir = M.options.status_dir
-	if not status_dir or status_dir:match("[;&|`$]") then
+	if not status_dir then
 		wezterm.log_warn("claude-agent: Invalid status_dir path, skipping cleanup")
 		return
 	end
 
-	local handle = io.popen('ls "' .. status_dir .. '" 2>/dev/null')
-	if handle then
-		for file in handle:lines() do
-			local pane_id = file:match("pane%-(%d+)%.json")
-			if pane_id and not current_panes[pane_id] then
-				os.remove(M.options.status_dir .. "/" .. file)
+	local ok, files = pcall(wezterm.read_dir, status_dir)
+	if ok and files then
+		for _, filepath in ipairs(files) do
+			local file = filepath:match("([^/]+)$") -- Extract filename from path
+			if file then
+				local pane_id = file:match("pane%-(%d+)%.json")
+				if pane_id and not current_panes[pane_id] then
+					os.remove(filepath)
+				end
 			end
 		end
-		handle:close()
 	end
 
 	-- Also clean files older than threshold (reuse validated status_dir)
@@ -174,9 +232,12 @@ M.cleanup_stale_files = function()
 end
 
 -- Count agents by status across all panes in a mux window
--- 3-state system: working, attention, idle
+-- For statusbar: uses user_vars (reliable for current window) and title detection
+-- NOTE: File-based status won't work here because pane:pane_id() returns mux IDs
+-- that don't match the $WEZTERM_PANE used in status filenames
+-- 3-state system: working, attention, idle (+ unknown for detected but no status)
 M.count_agents = function(mux_window)
-	local counts = { working = 0, attention = 0, idle = 0 }
+	local counts = { working = 0, attention = 0, idle = 0, unknown = 0 }
 	local tabs = mux_window:tabs()
 	if not tabs then
 		return counts
@@ -185,9 +246,20 @@ M.count_agents = function(mux_window)
 		local panes = tab:panes()
 		if panes then
 			for _, pane in ipairs(panes) do
-				local data = M.read_cached(pane:pane_id())
-				local agent_status = data and data.status
-				if agent_status then
+				local title = pane:get_title() or ""
+
+				-- Primary: user vars (works reliably for current window panes)
+				local user_var_status = M.read_user_var(pane)
+
+				-- Detection: user var present OR title matches Claude patterns
+				local has_user_var = user_var_status ~= nil
+				local has_claude_title = title:match("^✳")
+					or title:lower():match("claude")
+					or title:match("^%d+%.%d+%.%d+$") -- version like "2.0.75"
+
+				if has_user_var or has_claude_title then
+					-- Use user_var status if available, otherwise unknown
+					local agent_status = user_var_status or "unknown"
 					if counts[agent_status] ~= nil then
 						counts[agent_status] = counts[agent_status] + 1
 					end

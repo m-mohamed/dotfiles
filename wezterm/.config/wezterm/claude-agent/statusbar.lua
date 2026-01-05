@@ -100,7 +100,7 @@ M.register_events = function()
 
 			-- Section 4: Leader indicator
 			if window:leader_is_active() then
-				table.insert(cells, { Foreground = { Color = colors.status.waiting } })
+				table.insert(cells, { Foreground = { Color = colors.status.attention } })
 				table.insert(cells, { Text = "LEADER" .. sep })
 			end
 

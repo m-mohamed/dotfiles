@@ -161,20 +161,20 @@ end)
 -- ╚══════════════════════════════════════════════════════════════════════╝
 local claude_agent = require("claude-agent")
 
--- Tab title formatting using plugin's status reader
+-- Tab title formatting using user_vars for Claude status
+-- NOTE: pane.pane_id returns mux IDs that don't match $WEZTERM_PANE used in status files
+-- So we use pane.user_vars.claude_status instead (set by Claude hooks via OSC 1337)
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	local pane = tab.active_pane
 
-	-- Read status from plugin
-	local status_data = claude_agent.status.read_cached(pane.pane_id)
-	local status = status_data and status_data.status or nil
-	local start_time = status_data and status_data.start_time or nil
+	-- Read status from user_vars (reliable, set by Claude hooks)
+	local status = pane.user_vars and pane.user_vars.claude_status or nil
 
 	-- Get title
 	local title = tab.tab_title ~= "" and tab.tab_title or pane.title
 	title = title:gsub("^✳%s*", "") -- Remove ✳ prefix if present
 
-	-- If no Claude status file, show plain tab title
+	-- If no Claude status, show plain tab title
 	if not status then
 		return title
 	end
@@ -184,23 +184,12 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	local icon = colors.icons[status] or colors.icons.unknown
 	local color = colors.status[status] or colors.status.unknown
 
-	-- Format elapsed time for running/blocked/waiting states
-	local elapsed_str = ""
-	if status == "running" or status == "blocked" or status == "waiting" then
-		local elapsed = claude_agent.status.format_elapsed(start_time)
-		if elapsed then
-			elapsed_str = string.format(" (%s)", elapsed)
-		end
-	end
-
 	-- Return formatted tab title with colors
 	return wezterm.format({
 		{ Foreground = { Color = color } },
 		{ Text = icon .. " " },
 		{ Foreground = { Color = colors.ui.fg } },
 		{ Text = title },
-		{ Foreground = { Color = colors.ui.muted } },
-		{ Text = elapsed_str },
 	})
 end)
 
