@@ -214,6 +214,25 @@ M.get_choices = function()
 	return choices, counts
 end
 
+-- Validate agents and log any issues (called on dashboard open)
+local function validate_agents(agents)
+	local now = os.time()
+	local stale_threshold = 300 -- 5 minutes
+
+	for _, agent in ipairs(agents) do
+		-- Check for stale "working" status
+		if agent.status == "working" and agent.start_time then
+			local age = now - agent.start_time
+			if age > stale_threshold then
+				wezterm.log_warn(string.format(
+					"claude-agent: Stale 'working' status on pane %d (%dm old) - hooks may not be firing",
+					agent.pane_id, math.floor(age / 60)
+				))
+			end
+		end
+	end
+end
+
 -- Agent Dashboard action
 M.open_dashboard = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
@@ -221,6 +240,10 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 
 		local total = counts.attention + counts.working + counts.idle
 		wezterm.log_info("claude-agent: Dashboard opened, found " .. total .. " agents")
+
+		-- Run validation on agents
+		local agents = M.get_agents()
+		validate_agents(agents)
 
 		-- Emit event
 		wezterm.emit("claude-agent.dashboard.opened", window, total, counts)

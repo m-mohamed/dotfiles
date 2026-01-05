@@ -9,7 +9,13 @@
 --   claude-agent.dashboard.opened   - Dashboard opened, receives (window, agent_count, counts_table)
 --   claude-agent.dashboard.selected - Agent selected in dashboard, receives (window, pane_id)
 --   claude-agent.dashboard.canceled - Dashboard closed without selection, receives (window)
+--   claude-agent.health_check       - Health check run, receives (window, results)
 --   claude-agent.error              - Error occurred, receives (source, error_message)
+--
+-- Keybindings:
+--   Leader + G       - Open agent dashboard
+--   Leader + N       - Jump to next agent needing attention
+--   Leader + Shift+G - Open health check overlay
 --
 local wezterm = require("wezterm")
 local M = {}
@@ -20,6 +26,7 @@ M.status = require("claude-agent.status")
 M.statusbar = require("claude-agent.statusbar")
 M.dashboard = require("claude-agent.dashboard")
 M.analytics = require("claude-agent.analytics")
+M.diagnostics = require("claude-agent.diagnostics")
 
 -- Private state
 local initialized = false
@@ -44,6 +51,9 @@ local default_options = {
 	-- }
 	theme = nil,
 
+	-- Debug mode (verbose logging)
+	debug = false,
+
 	-- Analytics options (file-based logging for debugging)
 	analytics = {
 		enabled = true,
@@ -51,6 +61,11 @@ local default_options = {
 		log_dashboard = true, -- Log dashboard opens/selections
 		log_errors = true, -- Log errors
 		-- log_path = "~/.cache/claude-status/analytics.log", -- Default
+	},
+
+	-- Diagnostics options
+	diagnostics = {
+		stale_threshold = 300, -- 5 minutes - working status older than this triggers warning
 	},
 }
 
@@ -98,6 +113,12 @@ M.setup = function(opts)
 		M.analytics.setup(M.options.analytics)
 	end
 
+	-- Setup diagnostics
+	M.diagnostics.setup({
+		debug = M.options.debug,
+		stale_threshold = M.options.diagnostics and M.options.diagnostics.stale_threshold or 300,
+	})
+
 	-- Register event handlers (only once)
 	if not initialized then
 		M.statusbar.register_events()
@@ -110,7 +131,7 @@ M.setup = function(opts)
 		initialized = true
 	end
 
-	wezterm.log_info("claude-agent: Plugin initialized")
+	wezterm.log_info("claude-agent: Plugin initialized" .. (M.options.debug and " (debug mode)" or ""))
 	wezterm.emit("claude-agent.ready", M.options)
 end
 
@@ -130,6 +151,9 @@ M.apply_to_config = function(config, opts)
 
 	-- Register keybindings (Leader+G for dashboard, Leader+N for jump)
 	M.dashboard.register_keybindings(config)
+
+	-- Register diagnostics keybindings (Leader+Shift+G for health check)
+	M.diagnostics.register_keybindings(config)
 end
 
 -- Get current configuration (tabline.wez pattern)
@@ -150,6 +174,7 @@ end
 M.actions = {
 	open_dashboard = M.dashboard.open_dashboard,
 	jump_to_next_waiting = M.dashboard.jump_to_next_waiting,
+	open_health_check = M.diagnostics.open_health_check,
 }
 
 -- Theme API (tabline.wez pattern)

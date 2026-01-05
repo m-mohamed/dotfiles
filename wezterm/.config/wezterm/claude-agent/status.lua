@@ -289,4 +289,74 @@ M.format_elapsed = function(start_time)
 	end
 end
 
+-- Validation helpers for diagnostics
+
+-- Validate that file status matches user_var status
+-- Returns nil if valid, or mismatch info if invalid
+M.validate_status = function(pane_id, pane)
+	local file_data = M.read_file(pane_id)
+	local user_var = M.read_user_var(pane)
+
+	-- If neither exists, that's fine
+	if not file_data and not user_var then
+		return nil
+	end
+
+	-- If only one exists, that's a mismatch
+	if file_data and not user_var then
+		return {
+			pane_id = pane_id,
+			file_status = file_data.status,
+			user_var_status = nil,
+			reason = "file_only",
+		}
+	end
+
+	if user_var and not file_data then
+		return {
+			pane_id = pane_id,
+			file_status = nil,
+			user_var_status = user_var,
+			reason = "user_var_only",
+		}
+	end
+
+	-- Both exist - check if they match
+	if file_data.status ~= user_var then
+		return {
+			pane_id = pane_id,
+			file_status = file_data.status,
+			user_var_status = user_var,
+			reason = "status_mismatch",
+		}
+	end
+
+	return nil -- Valid
+end
+
+-- Get all status files (for diagnostics)
+M.get_all_status_files = function()
+	local files = {}
+	local ok, entries = pcall(wezterm.read_dir, M.options.status_dir)
+	if not ok or not entries then
+		return files
+	end
+
+	for _, filepath in ipairs(entries) do
+		local filename = filepath:match("([^/]+)$")
+		if filename then
+			local pane_id = filename:match("pane%-(%d+)%.json")
+			if pane_id then
+				table.insert(files, {
+					pane_id = tonumber(pane_id),
+					filename = filename,
+					path = filepath,
+				})
+			end
+		end
+	end
+
+	return files
+end
+
 return M

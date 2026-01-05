@@ -147,6 +147,50 @@ M.log_ready = function(options)
 	})
 end
 
+-- Diagnostic logging functions
+
+-- Log status mismatch between file and user_var
+M.log_mismatch = function(pane_id, file_status, user_var_status)
+	write_log("MISMATCH", {
+		pane = pane_id,
+		file = file_status or "nil",
+		user_var = user_var_status or "nil",
+	})
+	wezterm.log_warn(string.format(
+		"claude-agent: MISMATCH pane=%s file=%s user_var=%s",
+		tostring(pane_id), tostring(file_status), tostring(user_var_status)
+	))
+end
+
+-- Log stale status (working for too long)
+M.log_stale_status = function(pane_id, status, age_seconds)
+	write_log("STALE_STATUS", {
+		pane = pane_id,
+		status = status,
+		age = age_seconds,
+	})
+	wezterm.log_warn(string.format(
+		"claude-agent: STALE pane=%s status=%s age=%ds (hooks may not be firing)",
+		tostring(pane_id), tostring(status), age_seconds
+	))
+end
+
+-- Log orphan file (file exists but pane doesn't)
+M.log_orphan_file = function(pane_id, reason)
+	write_log("ORPHAN_FILE", {
+		pane = pane_id,
+		reason = reason or "unknown",
+	})
+end
+
+-- Log health check run
+M.log_health_check = function(file_count, issue_count)
+	write_log("HEALTH_CHECK", {
+		files = file_count,
+		issues = issue_count,
+	})
+end
+
 -- Register event listeners for all plugin events
 M.register_events = function()
 	-- Status changed (key event for debugging!)
