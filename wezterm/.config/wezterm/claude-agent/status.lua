@@ -199,6 +199,13 @@ M.cleanup_stale_files = function()
 	-- Get current pane IDs from CLI (matches $WEZTERM_PANE used in status filenames)
 	local current_panes = get_cli_pane_ids()
 
+	-- SAFETY: If CLI returned empty, don't delete anything
+	-- This prevents deleting valid files when run_child_process fails
+	if next(current_panes) == nil then
+		wezterm.log_warn("claude-agent: CLI returned no panes, skipping orphan cleanup")
+		return
+	end
+
 	-- Read directory and remove orphaned files using wezterm.read_dir (no subprocess)
 	local status_dir = M.options.status_dir
 	if not status_dir then
