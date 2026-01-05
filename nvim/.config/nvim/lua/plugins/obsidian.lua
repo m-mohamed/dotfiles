@@ -12,8 +12,8 @@ return {
       -- Workspace configuration
       workspaces = {
         {
-          name = "Slipbox",
-          path = "~/obsidian/Slipbox",
+          name = "slipbox",
+          path = "~/obsidian/slipbox",
         },
       },
 
