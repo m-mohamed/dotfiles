@@ -161,13 +161,13 @@ M.cleanup_stale_files = function()
 		handle:close()
 	end
 
-	-- Also clean files older than threshold
+	-- Also clean files older than threshold (reuse validated status_dir)
 	wezterm.background_child_process({
 		"zsh",
 		"-c",
 		string.format(
-			[[find %s -name "pane-*.json" -type f -mmin +%d -delete 2>/dev/null]],
-			M.options.status_dir,
+			[[find "%s" -name "pane-*.json" -type f -mmin +%d -delete 2>/dev/null]],
+			status_dir,
 			math.floor(M.options.stale_threshold / 60)
 		),
 	})
@@ -176,12 +176,19 @@ end
 -- Count agents by status across all panes in a mux window
 M.count_agents = function(mux_window)
 	local counts = { running = 0, blocked = 0, waiting = 0, idle = 0 }
-	for _, tab in ipairs(mux_window:tabs()) do
-		for _, pane in ipairs(tab:panes()) do
-			local data = M.read_cached(pane:pane_id())
-			local status = data and data.status
-			if status and counts[status] ~= nil then
-				counts[status] = counts[status] + 1
+	local tabs = mux_window:tabs()
+	if not tabs then
+		return counts
+	end
+	for _, tab in ipairs(tabs) do
+		local panes = tab:panes()
+		if panes then
+			for _, pane in ipairs(panes) do
+				local data = M.read_cached(pane:pane_id())
+				local status = data and data.status
+				if status and counts[status] ~= nil then
+					counts[status] = counts[status] + 1
+				end
 			end
 		end
 	end

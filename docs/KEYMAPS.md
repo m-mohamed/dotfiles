@@ -1547,6 +1547,15 @@ Ctrl+ / Ctrl-       # Font size increase/decrease
 Ctrl+0              # Reset font size
 ```
 
+### Claude Agent Dashboard
+
+```vim
+Ctrl+a → g          # Open agent dashboard (fuzzy search)
+Ctrl+a → n          # Jump to next waiting agent
+```
+
+Status bar shows: 🤖 (running), 🔐 (blocked), 🔔 (waiting), ⏸️ (idle)
+
 ### Configuration
 
 - Font: JetBrainsMono Nerd Font, size 22

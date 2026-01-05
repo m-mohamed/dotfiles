@@ -489,6 +489,7 @@ config.launch_menu = {
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║ Apply Claude Agent Plugin (must be after config.keys is defined)     ║
+-- ║ Registers: Leader+G (dashboard), Leader+N (jump to waiting agent)    ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 claude_agent.apply_to_config(config, {
 	show_idle = true,

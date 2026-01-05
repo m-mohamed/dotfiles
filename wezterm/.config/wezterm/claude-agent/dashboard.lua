@@ -136,13 +136,13 @@ M.get_choices = function()
 		if agent.status ~= last_status then
 			local sep_label = ""
 			if agent.status == "blocked" then
-				sep_label = "─── 🔐 NEEDS PERMISSION ─────────────"
+				sep_label = "─── 🔐 NEEDS PERMISSION ────────────"
 			elseif agent.status == "waiting" then
-				sep_label = "─── 🔔 NEEDS INPUT ──────────────────"
+				sep_label = "─── 🔔 NEEDS INPUT ─────────────────"
 			elseif agent.status == "running" then
-				sep_label = "─── 🤖 RUNNING ──────────────────────"
+				sep_label = "─── 🤖 RUNNING ─────────────────────"
 			elseif agent.status == "idle" then
-				sep_label = "─── ⏸️ IDLE ──────────────────────────"
+				sep_label = "─── ⏸️  IDLE ───────────────────────"
 			end
 
 			if sep_label ~= "" then

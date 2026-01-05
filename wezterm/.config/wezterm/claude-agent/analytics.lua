@@ -28,7 +28,8 @@ end
 -- Ensure log directory exists
 local function ensure_dir()
 	local dir = M.options.log_path:match("(.+)/[^/]+$")
-	if dir then
+	-- Validate path (prevent shell injection)
+	if dir and not dir:match("[;&|`$]") then
 		os.execute('mkdir -p "' .. dir .. '" 2>/dev/null')
 	end
 end
