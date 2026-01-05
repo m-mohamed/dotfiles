@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh idle",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh working",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh attention permission && terminal-notifier -title 'Permission Needed' -message \"Approve in ${PWD##*/}\" -sound Basso || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh attention input && terminal-notifier -title 'Claude Waiting' -message \"Needs input in ${PWD##*/}\" -sound Basso || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh idle && terminal-notifier -title 'Claude Done' -message \"Done in ${PWD##*/}\" -sound default || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
