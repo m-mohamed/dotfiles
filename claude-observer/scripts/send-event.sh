@@ -40,10 +40,19 @@ else
         "$HOOK_NAME" "$STATUS" "$PANE_ID" "$PROJECT" "$TIMESTAMP")
 fi
 
-# Try to send to socket (fire-and-forget with timeout)
+# Try to send to socket using Python (nc on macOS doesn't close properly)
 if [[ -S "$SOCKET" ]]; then
-    (echo "$JSON" | nc -U -w 1 "$SOCKET" 2>/dev/null) &
-    exit 0
+    python3 -c "
+import socket
+import sys
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+try:
+    s.connect('$SOCKET')
+    s.sendall(b'$JSON\n')
+    s.close()
+except:
+    sys.exit(1)
+" 2>/dev/null && exit 0
 fi
 
 # Fallback: write to file (for WezTerm plugin when observer not running)
