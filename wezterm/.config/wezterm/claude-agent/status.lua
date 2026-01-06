@@ -8,7 +8,7 @@ local MAX_CACHE_SIZE = 100 -- Maximum cached panes
 -- Module-local cache state (wezterm.GLOBAL doesn't support nested tables with integer keys)
 local cache = {}
 local cache_order = {}
-local last_cleanup = os.time() -- Delay first cleanup to prevent startup deadlock
+local last_cleanup = 0 -- Allow first cleanup to run immediately on startup
 
 -- Default cache directory (respects XDG_CACHE_HOME) - exported for init.lua
 M.get_default_dir = function()

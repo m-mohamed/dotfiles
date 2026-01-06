@@ -10,7 +10,7 @@
 | **Status files** | ✅ | `~/.cache/claude-status/pane-{id}.json` written reliably |
 | **Dashboard (Leader+G)** | ✅ | Shows all agents with colored status icons |
 | **Health Check (Leader+Shift+G)** | ✅ | Shows status files and diagnostics |
-| **macOS notifications** | ✅ | terminal-notifier on Stop/Notification/PermissionRequest/PreCompact |
+| **macOS notifications** | ✅ | terminal-notifier on PermissionRequest only |
 | **Multi-workspace** | ✅ | Works across all workspaces |
 | **Debug logging** | ✅ | `~/.cache/claude-status/debug.log` |
 
@@ -115,6 +115,13 @@ cat ~/.cache/claude-status/*.json | jq .
 ---
 
 ## Recent Fixes
+
+### 2026-01-05: Notification noise reduction + Startup cleanup
+- Removed "Claude Done" notification (Stop hook) - status bar shows completion
+- Removed "Claude Waiting" notification (Notification hook) - redundant when focused
+- Removed "Context Compacting" notification (PreCompact) - status bar shows state
+- Kept "Permission Needed" notification (PermissionRequest) - only important alert
+- Fixed startup cleanup delay: orphan files now cleaned immediately on WezTerm start
 
 ### 2026-01-05: 4-State System Upgrade
 
