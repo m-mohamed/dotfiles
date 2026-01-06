@@ -1551,6 +1551,7 @@ Ctrl+0              # Reset font size
 
 ```vim
 Ctrl+a → g          # Open agent dashboard (fuzzy search)
+Ctrl+a → r          # Refresh dashboard (reopen with fresh data)
 Ctrl+a → n          # Jump to next agent needing attention
 ```
 

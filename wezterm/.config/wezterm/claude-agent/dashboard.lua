@@ -297,16 +297,10 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 					-- Emit event
 					wezterm.emit("claude-agent.dashboard.selected", inner_window, pane_id)
 
-					-- Navigate to agent using SwitchToWorkspace action
-					-- (smart_workspace_switcher pattern - native WezTerm actions are most reliable)
-					if nav_workspace and nav_workspace ~= "" then
-						-- Workspace switch brings us to the correct tab/pane
-						inner_window:perform_action(
-							act.SwitchToWorkspace({ name = nav_workspace }),
-							inner_pane
-						)
-					elseif pane_id then
-						-- Fallback: CLI activate-pane if no workspace info
+					-- Navigate to agent using CLI activate-pane
+					-- SwitchToWorkspace doesn't work reliably across separate windows
+					-- CLI activate-pane properly focuses any pane in any window
+					if pane_id then
 						wezterm.run_child_process({
 							M.options.wezterm_cli_path,
 							"cli",
@@ -337,14 +331,9 @@ M.jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 			if agent.status == "attention" then
 				wezterm.log_info("claude-agent: Jumping to attention agent")
 
-				-- Navigate using SwitchToWorkspace (smart_workspace_switcher pattern)
-				if agent.nav_workspace and agent.nav_workspace ~= "" then
-					window:perform_action(
-						act.SwitchToWorkspace({ name = agent.nav_workspace }),
-						pane
-					)
-				elseif agent.pane_id then
-					-- Fallback: CLI activate-pane if no workspace info
+				-- Navigate using CLI activate-pane
+				-- SwitchToWorkspace doesn't work reliably across separate windows
+				if agent.pane_id then
 					wezterm.run_child_process({
 						M.options.wezterm_cli_path,
 						"cli",
@@ -389,6 +378,14 @@ M.register_keybindings = function(config)
 		key = "n",
 		mods = "LEADER",
 		action = M.jump_to_next_waiting,
+	})
+
+	-- Add dashboard refresh (Leader + R)
+	-- Since InputSelector is static, this lets user quickly reopen with fresh data
+	table.insert(config.keys, {
+		key = "r",
+		mods = "LEADER",
+		action = M.open_dashboard,
 	})
 end
 
