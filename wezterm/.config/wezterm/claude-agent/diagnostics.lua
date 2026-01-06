@@ -74,40 +74,10 @@ M.get_all_status_files = function()
 	return files
 end
 
--- Get user vars from all panes in current window
-M.get_user_vars = function(mux_window)
-	local status = get_status()
-	local vars = {}
+-- NOTE: get_user_vars() removed - pane:pane_id() returns mux IDs which
+-- don't match CLI pane IDs used in status files. Comparison would never work.
 
-	if not mux_window then
-		return vars
-	end
-
-	local tabs = mux_window:tabs()
-	if not tabs then
-		return vars
-	end
-
-	for _, tab in ipairs(tabs) do
-		local panes = tab:panes()
-		if panes then
-			for _, pane in ipairs(panes) do
-				local pane_id = pane:pane_id()
-				local user_var = status.read_user_var(pane)
-				if user_var then
-					table.insert(vars, {
-						pane_id = pane_id,
-						status = user_var,
-					})
-				end
-			end
-		end
-	end
-
-	return vars
-end
-
--- Get CLI panes for comparison
+-- Get CLI panes for summary display
 M.get_cli_panes = function()
 	local status = get_status()
 	return status.get_current_pane_ids()
@@ -121,43 +91,13 @@ M.run_health_check = function(mux_window)
 
 	local results = {
 		status_files = M.get_all_status_files(),
-		user_vars = M.get_user_vars(mux_window),
 		cli_panes = M.get_cli_panes(),
-		mismatches = {},
 		stale_statuses = {},
 		issues = {},
 	}
 
-	-- Build lookup tables
-	local file_by_pane = {}
-	for _, f in ipairs(results.status_files) do
-		file_by_pane[tostring(f.pane_id)] = f
-	end
-
-	local var_by_pane = {}
-	for _, v in ipairs(results.user_vars) do
-		var_by_pane[tostring(v.pane_id)] = v
-	end
-
-	-- Check for mismatches (file status != user var status)
-	for pane_id_str, file_data in pairs(file_by_pane) do
-		local var_data = var_by_pane[pane_id_str]
-		if var_data and file_data.status ~= var_data.status then
-			local mismatch = {
-				pane_id = file_data.pane_id,
-				file_status = file_data.status,
-				user_var_status = var_data.status,
-			}
-			table.insert(results.mismatches, mismatch)
-			table.insert(results.issues, string.format(
-				"MISMATCH: pane %d has file=%s but user_var=%s",
-				file_data.pane_id, file_data.status, var_data.status
-			))
-
-			-- Log to analytics
-			analytics.log_mismatch(file_data.pane_id, file_data.status, var_data.status)
-		end
-	end
+	-- NOTE: User var mismatch detection removed - pane:pane_id() returns mux IDs
+	-- which don't match CLI pane IDs in status files. The comparison would never work.
 
 	-- Check for stale working statuses
 	for _, file_data in ipairs(results.status_files) do
@@ -210,28 +150,6 @@ M.format_health_check = function(results)
 			table.insert(lines, {
 				{ Foreground = { Color = status_color } },
 				{ Text = string.format("  %s pane-%d: %s (%s)", icon, f.pane_id, f.status, project_short) },
-			})
-		end
-	end
-
-	-- User Vars section
-	table.insert(lines, {
-		{ Foreground = { Color = colors.ui.muted } },
-		{ Text = "--- User Vars (current window) ---" },
-	})
-
-	if #results.user_vars == 0 then
-		table.insert(lines, {
-			{ Foreground = { Color = colors.ui.muted } },
-			{ Text = "  (none)" },
-		})
-	else
-		for _, v in ipairs(results.user_vars) do
-			local icon = colors.icons[v.status] or "?"
-			local status_color = colors.status[v.status] or colors.status.unknown
-			table.insert(lines, {
-				{ Foreground = { Color = status_color } },
-				{ Text = string.format("  %s pane %d: %s", icon, v.pane_id, v.status) },
 			})
 		end
 	end

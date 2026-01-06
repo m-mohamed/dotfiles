@@ -58,29 +58,41 @@ end
 
 local WEZTERM_CLI = find_wezterm_cli()
 
--- Get pane IDs from CLI (matches $WEZTERM_PANE, unlike Lua pane:pane_id())
--- Returns a set table { ["0"] = true, ["1"] = true, ... }
+-- Get full pane data from CLI (exported for dashboard.lua)
+-- Returns array: [{pane_id, tab_id, workspace, title, cwd, ...}, ...]
+-- Returns nil on error
 -- NOTE: Uses run_child_process (not io.popen) to avoid blocking GUI thread
-local function get_cli_pane_ids()
-	local pane_ids = {}
+M.get_cli_panes = function()
 	local success, stdout, stderr = wezterm.run_child_process({ WEZTERM_CLI, "cli", "list", "--format", "json" })
 	if not success then
-		wezterm.log_warn("claude-agent: Failed to run wezterm cli list: " .. (stderr or "unknown"))
-		return pane_ids
+		wezterm.log_warn("claude-agent: Failed to run wezterm cli list: " .. (stderr or "unknown error"))
+		return nil
 	end
 
 	if not stdout or stdout == "" then
-		return pane_ids
+		return nil
 	end
 
 	local ok, panes = pcall(wezterm.json_parse, stdout)
 	if not ok or type(panes) ~= "table" then
-		return pane_ids
+		wezterm.log_warn("claude-agent: Failed to parse wezterm cli list output")
+		return nil
 	end
 
-	for _, pane in ipairs(panes) do
-		if pane.pane_id then
-			pane_ids[tostring(pane.pane_id)] = true
+	return panes
+end
+
+-- Get pane IDs from CLI (matches $WEZTERM_PANE, unlike Lua pane:pane_id())
+-- Returns a set table { ["0"] = true, ["1"] = true, ... }
+local function get_cli_pane_ids()
+	local panes = M.get_cli_panes()
+	local pane_ids = {}
+
+	if panes then
+		for _, pane in ipairs(panes) do
+			if pane.pane_id then
+				pane_ids[tostring(pane.pane_id)] = true
+			end
 		end
 	end
 

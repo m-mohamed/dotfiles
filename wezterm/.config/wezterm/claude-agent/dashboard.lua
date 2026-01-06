@@ -38,30 +38,7 @@ local status_priority = {
 	unknown = 5,
 }
 
--- Get panes from wezterm CLI (returns correct pane_ids that match $WEZTERM_PANE)
--- This is needed because mux.all_windows():pane_id() returns internal mux IDs
--- which differ from the shell's $WEZTERM_PANE environment variable
--- NOTE: Uses run_child_process (not io.popen) to avoid blocking GUI thread
-local function get_cli_panes()
-	local cli_path = M.options.wezterm_cli_path
-	local success, stdout, stderr = wezterm.run_child_process({ cli_path, "cli", "list", "--format", "json" })
-	if not success then
-		wezterm.log_warn("claude-agent: Failed to run wezterm cli list: " .. (stderr or "unknown error"))
-		return nil
-	end
-
-	if not stdout or stdout == "" then
-		return nil
-	end
-
-	local ok, panes = pcall(wezterm.json_parse, stdout)
-	if not ok or type(panes) ~= "table" then
-		wezterm.log_warn("claude-agent: Failed to parse wezterm cli list output")
-		return nil
-	end
-
-	return panes
-end
+-- get_cli_panes is now in status.lua (status.get_cli_panes)
 
 -- Setup with user options
 M.setup = function(opts)
@@ -96,7 +73,7 @@ M.get_agents = function()
 	-- Build lookup of CLI panes for metadata (title, workspace)
 	-- CLI may return partial data, so we use it only for enhancement
 	local cli_lookup = {}
-	local cli_panes = get_cli_panes()
+	local cli_panes = status.get_cli_panes()
 	if cli_panes then
 		for _, p in ipairs(cli_panes) do
 			cli_lookup[tostring(p.pane_id)] = p
@@ -113,11 +90,17 @@ M.get_agents = function()
 				local status_data = status.read_file(pane_id)
 
 				if status_data then
-					-- Get CLI metadata if available, otherwise use fallbacks
+					-- Get CLI metadata if available
 					local cli_pane = cli_lookup[pane_id_str]
-					local workspace = (cli_pane and cli_pane.workspace) or status_data.project or "unknown"
+
+					-- For DISPLAY: prefer CLI workspace, fallback to project is OK
+					local display_workspace = (cli_pane and cli_pane.workspace) or status_data.project or "unknown"
+
+					-- For NAVIGATION: ONLY use CLI workspace (nil if unavailable)
+					-- Project name != workspace name, so don't use project as fallback
+					local nav_workspace = cli_pane and cli_pane.workspace -- nil if no CLI data
+
 					-- Project/repo name comes from status file (git repo name from hooks)
-					-- CLI title is unreliable (can be "2.0.75" Claude version)
 					local project = status_data.project or "unknown"
 					local tab_id = (cli_pane and cli_pane.tab_id) or 0
 
@@ -126,7 +109,8 @@ M.get_agents = function()
 					table.insert(agents, {
 						tab_id = tab_id,
 						pane_id = pane_id,
-						workspace = workspace,
+						workspace = display_workspace, -- For display in label
+						nav_workspace = nav_workspace, -- For SwitchToWorkspace (can be nil)
 						project = project,
 						status = agent_status,
 						start_time = status_data.start_time,
@@ -168,14 +152,15 @@ M.get_choices = function()
 		-- Add separator when status changes
 		if agent.status ~= last_status then
 			local sep_label = ""
+			local icon = colors.icons[agent.status] or "?"
 			if agent.status == "attention" then
-				sep_label = "─── 🔔 NEEDS ATTENTION ─────────────"
+				sep_label = string.format("─── %s NEEDS ATTENTION ─────────────", icon)
 			elseif agent.status == "compacting" then
-				sep_label = "─── 🔄 COMPACTING ──────────────────"
+				sep_label = string.format("─── %s COMPACTING ──────────────────", icon)
 			elseif agent.status == "working" then
-				sep_label = "─── 🤖 WORKING ─────────────────────"
+				sep_label = string.format("─── %s WORKING ─────────────────────", icon)
 			elseif agent.status == "idle" then
-				sep_label = "─── ⏸️  IDLE ───────────────────────"
+				sep_label = string.format("─── %s IDLE ────────────────────────", icon)
 			end
 
 			if sep_label ~= "" then
@@ -220,8 +205,10 @@ M.get_choices = function()
 			table.insert(label_parts, 1, { Background = { Color = "#2a2a3d" } })
 		end
 
+		-- Encode nav_workspace in ID for selection handler (empty string if nil)
+		local nav_ws = agent.nav_workspace or ""
 		table.insert(choices, {
-			id = string.format("%d:%d:%s", agent.tab_id, agent.pane_id, agent.workspace),
+			id = string.format("%d:%d:%s:%s", agent.tab_id, agent.pane_id, nav_ws, agent.workspace),
 			label = wezterm.format(label_parts),
 		})
 	end
@@ -302,20 +289,28 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 						return
 					end
 
-					local tab_id, pane_id, workspace = id:match("(%d+):(%d+):(.+)")
+					-- Extract: tab_id:pane_id:nav_workspace:display_workspace
+					-- nav_workspace can be empty string if CLI data unavailable
+					local tab_id, pane_id, nav_workspace, display_workspace = id:match("(%d+):(%d+):([^:]*):(.+)")
 					pane_id = tonumber(pane_id)
+					-- Convert empty string to nil
+					if nav_workspace == "" then
+						nav_workspace = nil
+					end
 
 					-- Emit event
 					wezterm.emit("claude-agent.dashboard.selected", inner_window, pane_id)
 
-					-- Switch to workspace
-					if workspace then
-						inner_window:perform_action(act.SwitchToWorkspace({ name = workspace }), inner_pane)
+					-- Only switch workspace if we have valid CLI workspace data
+					-- (don't use project name fallback - it creates new workspaces!)
+					if nav_workspace then
+						inner_window:perform_action(act.SwitchToWorkspace({ name = nav_workspace }), inner_pane)
 					end
 
-					-- Activate pane (use background process to avoid GUI freeze)
+					-- Activate pane (sync to ensure it runs after workspace switch)
+					-- CLI activate-pane works globally across all windows
 					if pane_id then
-						wezterm.background_child_process({
+						wezterm.run_child_process({
 							M.options.wezterm_cli_path,
 							"cli",
 							"activate-pane",
@@ -345,12 +340,14 @@ M.jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 			if agent.status == "attention" then
 				wezterm.log_info("claude-agent: Jumping to attention agent")
 
-				if agent.workspace then
-					window:perform_action(act.SwitchToWorkspace({ name = agent.workspace }), pane)
+				-- Only switch workspace if we have valid CLI workspace data
+				if agent.nav_workspace then
+					window:perform_action(act.SwitchToWorkspace({ name = agent.nav_workspace }), pane)
 				end
 
+				-- Activate pane (sync, works globally across windows)
 				if agent.pane_id then
-					wezterm.background_child_process({
+					wezterm.run_child_process({
 						M.options.wezterm_cli_path,
 						"cli",
 						"activate-pane",
