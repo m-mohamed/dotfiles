@@ -60,6 +60,18 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh working",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "*",
@@ -92,6 +104,18 @@
             "type": "command",
             "command": "rm -f ~/.cache/claude-status/pane-${WEZTERM_PANE:-unknown}.json 2>/dev/null || true",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh compacting && terminal-notifier -title 'Context Compacting' -message \"Compacting in ${PWD##*/}\" -sound Purr || true",
+            "timeout": 10
           }
         ]
       }

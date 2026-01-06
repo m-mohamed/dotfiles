@@ -6,7 +6,7 @@
 # 1. ~/.cache/claude-status/pane-{id}.json (source of truth for WezTerm plugin)
 # 2. OSC 1337 SetUserVar (fast cache for statusbar)
 #
-# Statuses: idle, working, attention
+# Statuses: idle, working, attention, compacting
 # Attention types: permission, input
 
 set -euo pipefail
@@ -24,7 +24,7 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') | status=$STATUS attn=$ATTN_TYPE WEZTERM_PANE
 
 # Validate status
 [[ -z "$STATUS" ]] && exit 0
-[[ ! "$STATUS" =~ ^(idle|working|attention)$ ]] && exit 0
+[[ ! "$STATUS" =~ ^(idle|working|attention|compacting)$ ]] && exit 0
 
 # Get pane ID from WEZTERM_PANE environment variable
 # This is set by WezTerm and inherited by subprocesses

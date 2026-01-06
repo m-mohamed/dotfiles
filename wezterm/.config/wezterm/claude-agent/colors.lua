@@ -3,13 +3,14 @@
 local M = {}
 
 -- Default theme: Tokyo Night
--- 3-state system: idle (inactive), working (processing), attention (needs you)
+-- 4-state system: idle (inactive), working (processing), attention (needs you), compacting (context filling)
 local default_theme = {
 	-- Status colors
 	status = {
 		idle = "#565f89", -- Gray - session inactive
 		working = "#7aa2f7", -- Blue - Claude processing
 		attention = "#ff9e64", -- Orange - needs user input/permission
+		compacting = "#e0af68", -- Yellow/amber - context compacting
 		unknown = "#565f89", -- Gray - fallback
 	},
 	-- UI colors
@@ -20,11 +21,12 @@ local default_theme = {
 }
 
 -- Default icons
--- 3-state system: idle ⏸️, working 🤖, attention 🔔
+-- 4-state system: idle ⏸️, working 🤖, attention 🔔, compacting 🔄
 local default_icons = {
 	idle = "⏸️",
 	working = "🤖",
 	attention = "🔔",
+	compacting = "🔄",
 	unknown = "⚪",
 }
 

@@ -29,12 +29,13 @@ M.options = {
 }
 
 -- Priority order for agent status (attention-needed first)
--- 3-state system: attention → working → idle
+-- 4-state system: attention → compacting → working → idle
 local status_priority = {
 	attention = 1,
-	working = 2,
-	idle = 3,
-	unknown = 4,
+	compacting = 2,
+	working = 3,
+	idle = 4,
+	unknown = 5,
 }
 
 -- Get panes from wezterm CLI (returns correct pane_ids that match $WEZTERM_PANE)
@@ -150,11 +151,11 @@ M.get_agents = function()
 end
 
 -- Build dashboard choices with separators and colors
--- 3-state system: attention (🔔), working (🤖), idle (⏸️)
+-- 4-state system: attention (🔔), compacting (🔄), working (🤖), idle (⏸️)
 M.get_choices = function()
 	local agents = M.get_agents()
 	local choices = {}
-	local counts = { attention = 0, working = 0, idle = 0 }
+	local counts = { attention = 0, compacting = 0, working = 0, idle = 0 }
 	local last_status = nil
 
 	-- Count agents by status
@@ -171,6 +172,8 @@ M.get_choices = function()
 			local sep_label = ""
 			if agent.status == "attention" then
 				sep_label = "─── 🔔 NEEDS ATTENTION ─────────────"
+			elseif agent.status == "compacting" then
+				sep_label = "─── 🔄 COMPACTING ──────────────────"
 			elseif agent.status == "working" then
 				sep_label = "─── 🤖 WORKING ─────────────────────"
 			elseif agent.status == "idle" then
@@ -252,7 +255,7 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
 		local choices, counts = M.get_choices()
 
-		local total = counts.attention + counts.working + counts.idle
+		local total = counts.attention + counts.compacting + counts.working + counts.idle
 		wezterm.log_info("claude-agent: Dashboard opened, found " .. total .. " agents")
 
 		-- Run validation on agents
@@ -267,10 +270,13 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 			return
 		end
 
-		-- Build summary for title (3-state system)
+		-- Build summary for title (4-state system)
 		local summary_parts = {}
 		if counts.attention > 0 then
 			table.insert(summary_parts, counts.attention .. " attention")
+		end
+		if counts.compacting > 0 then
+			table.insert(summary_parts, counts.compacting .. " compacting")
 		end
 		if counts.working > 0 then
 			table.insert(summary_parts, counts.working .. " working")
@@ -332,7 +338,7 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 	end
 end)
 
--- Jump to next agent that needs attention (3-state system)
+-- Jump to next agent that needs attention (4-state system)
 M.jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 	local ok, err = pcall(function()
 		local agents = M.get_agents()

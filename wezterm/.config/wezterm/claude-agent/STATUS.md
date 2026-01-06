@@ -1,16 +1,16 @@
 # Claude Agent Plugin - Status Report
 
-## Current State: Working
+## Current State: Working (4-State System)
 
 ### What's Working
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| **Hooks firing** | ✅ | All 8 hooks configured (SessionStart, UserPromptSubmit, PermissionRequest, Notification, Stop, PostToolUse, SubagentStop, SessionEnd) |
+| **Hooks firing** | ✅ | All 10 hooks configured (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest, Notification, Stop, SubagentStop, PreCompact, SessionEnd) |
 | **Status files** | ✅ | `~/.cache/claude-status/pane-{id}.json` written reliably |
 | **Dashboard (Leader+G)** | ✅ | Shows all agents with colored status icons |
 | **Health Check (Leader+Shift+G)** | ✅ | Shows status files and diagnostics |
-| **macOS notifications** | ✅ | terminal-notifier on Stop/Notification/PermissionRequest |
+| **macOS notifications** | ✅ | terminal-notifier on Stop/Notification/PermissionRequest/PreCompact |
 | **Multi-workspace** | ✅ | Works across all workspaces |
 | **Debug logging** | ✅ | `~/.cache/claude-status/debug.log` |
 
@@ -20,6 +20,7 @@
 |---------|--------|-------|
 | **User Vars** | ⚠️ | OSC 1337 doesn't work from hook subprocesses (no TTY) |
 | **Orphan detection** | ⚠️ | CLI unreliable in callback contexts - detection skipped when data incomplete |
+| **PermissionRequest** | ⚠️ | Undocumented hook, but working - keep monitoring |
 
 ---
 
@@ -36,32 +37,36 @@
                               │
                     ┌─────────┴─────────┐
                     ▼                   ▼
-             PostToolUse          [Claude thinking]
+             PreToolUse           [Claude thinking]
+             PostToolUse                │
              (stays working)            │
                     │                   │
                     └─────────┬─────────┘
                               │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-       PermissionRequest  Notification     Stop
-       → attention        → attention    → idle
-       (permission)       (input)
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+ PermissionRequest      Notification          PreCompact
+ → attention            → attention           → compacting
+ (permission)           (input)               (context full)
                               │
         SubagentStop ─────────┼──────────────→ working
         (back from agent)     │
+                              │
+        Stop ─────────────────┼──────────────→ idle
                               │
         SessionEnd ───────────┼──────────────→ cleanup
         (removes status file)
 ```
 
-### States
+### 4-State System
 
-| State | Icon | Color | When |
-|-------|------|-------|------|
-| `attention` | 🔔 | Orange | Needs user input or permission |
-| `working` | 🤖 | Blue | Claude actively processing |
-| `idle` | ⏸️ | Gray | Session inactive, waiting for prompt |
-| `unknown` | ⚪ | White | No status file found |
+| State | Icon | Color | Meaning | Hooks |
+|-------|------|-------|---------|-------|
+| `idle` | ⏸️ | Gray (#565f89) | Waiting for prompt | SessionStart, Stop |
+| `working` | 🤖 | Blue (#7aa2f7) | Processing | UserPromptSubmit, PreToolUse, PostToolUse, SubagentStop |
+| `attention` | 🔔 | Orange (#ff9e64) | Needs user action | PermissionRequest, Notification |
+| `compacting` | 🔄 | Yellow (#e0af68) | Context filling up | PreCompact |
+| `unknown` | ⚪ | White | No status file found | - |
 
 ---
 
@@ -110,6 +115,14 @@ cat ~/.cache/claude-status/*.json | jq .
 ---
 
 ## Recent Fixes
+
+### 2026-01-05: 4-State System Upgrade
+
+Upgraded from 3-state to 4-state system:
+- **New state**: `compacting` (🔄 yellow) for context compaction
+- **New hook**: `PreCompact` fires when context is about to compact
+- **Notification**: macOS notification with "Purr" sound when compacting starts
+- **Total hooks**: 10 (9 official + PermissionRequest undocumented)
 
 ### 2026-01-05: Enhanced hook coverage
 

@@ -242,9 +242,9 @@ end
 -- For statusbar: uses user_vars (reliable for current window) and title detection
 -- NOTE: File-based status won't work here because pane:pane_id() returns mux IDs
 -- that don't match the $WEZTERM_PANE used in status filenames
--- 3-state system: working, attention, idle (+ unknown for detected but no status)
+-- 4-state system: working, compacting, attention, idle (+ unknown for detected but no status)
 M.count_agents = function(mux_window)
-	local counts = { working = 0, attention = 0, idle = 0, unknown = 0 }
+	local counts = { working = 0, compacting = 0, attention = 0, idle = 0, unknown = 0 }
 	local tabs = mux_window:tabs()
 	if not tabs then
 		return counts
