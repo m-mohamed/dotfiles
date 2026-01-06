@@ -474,8 +474,8 @@ config.launch_menu = {
 claude_agent.apply_to_config(config, {
 	show_idle = true,
 	separator = " │ ",
-	cache_ttl = 0.1, -- 1s → 0.1s for faster updates
-	status_update_interval = 150, -- 500ms → 150ms for faster polling
+	cache_ttl = 0.1, -- file cache TTL
+	status_update_interval = 50, -- Ultra-fast polling (50ms)
 })
 
 return config
