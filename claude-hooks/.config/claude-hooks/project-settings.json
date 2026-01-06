@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh idle '' Stop",
+            "command": "/Users/mohamedmohamed/.config/claude-hooks/write-status.sh idle '' Stop && terminal-notifier -title 'Claude Done' -message \"Done in ${PWD##*/}\" -sound default || true",
             "timeout": 10
           }
         ]
