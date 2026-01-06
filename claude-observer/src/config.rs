@@ -1,8 +1,5 @@
 use ratatui::style::Color;
 
-/// Socket path for IPC
-pub const SOCKET_PATH: &str = "/tmp/claude-observer.sock";
-
 /// Maximum events to keep in history
 pub const MAX_EVENTS: usize = 50;
 

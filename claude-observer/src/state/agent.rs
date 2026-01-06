@@ -34,16 +34,6 @@ impl Status {
             Status::Idle => 3,
         }
     }
-
-    /// Status label for display
-    pub fn label(&self) -> &'static str {
-        match self {
-            Status::Idle => "idle",
-            Status::Working => "working",
-            Status::Attention(_) => "attention",
-            Status::Compacting => "compacting",
-        }
-    }
 }
 
 /// Type of attention needed

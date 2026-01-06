@@ -30,9 +30,6 @@ impl App {
             Event::Key(key) => {
                 self.handle_key(key);
             }
-            Event::Tick => {
-                self.tick();
-            }
         }
     }
 

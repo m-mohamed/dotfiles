@@ -26,7 +26,7 @@ pub fn render(f: &mut Frame, app: &App) {
         ])
         .split(f.area());
 
-    render_header(f, chunks[0]);
+    render_header(f, chunks[0], app);
     render_agent_list(f, chunks[1], app);
     render_activity(f, chunks[2], app);
     render_footer(f, chunks[3], app);
@@ -42,8 +42,34 @@ pub fn render(f: &mut Frame, app: &App) {
     }
 }
 
-fn render_header(f: &mut Frame, area: Rect) {
-    let header = Paragraph::new("Claude Observer")
+fn render_header(f: &mut Frame, area: Rect, app: &App) {
+    // Count agents by status
+    let agents = &app.state.agents;
+    let working = agents.values().filter(|a| matches!(a.status, Status::Working)).count();
+    let attention = agents.values().filter(|a| matches!(a.status, Status::Attention(_))).count();
+    let idle = agents.values().filter(|a| matches!(a.status, Status::Idle)).count();
+    let compacting = agents.values().filter(|a| matches!(a.status, Status::Compacting)).count();
+    let total = agents.len();
+
+    // Build status summary
+    let status_parts: Vec<String> = [
+        (attention, "attention"),
+        (working, "working"),
+        (compacting, "compacting"),
+        (idle, "idle"),
+    ]
+    .iter()
+    .filter(|(count, _)| *count > 0)
+    .map(|(count, label)| format!("{} {}", count, label))
+    .collect();
+
+    let title = if total == 0 {
+        "Claude Observer".to_string()
+    } else {
+        format!("Claude Observer ({} agents: {})", total, status_parts.join(", "))
+    };
+
+    let header = Paragraph::new(title)
         .style(Style::default().fg(colors::FG).add_modifier(Modifier::BOLD))
         .alignment(Alignment::Center)
         .block(

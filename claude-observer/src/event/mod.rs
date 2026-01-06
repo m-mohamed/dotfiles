@@ -10,8 +10,6 @@ pub enum Event {
     Hook(HookEvent),
     /// Keyboard input
     Key(crossterm::event::KeyEvent),
-    /// Tick for updating elapsed times
-    Tick,
 }
 
 /// Hook event from Claude Code

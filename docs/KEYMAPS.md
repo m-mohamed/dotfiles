@@ -1547,15 +1547,45 @@ Ctrl+ / Ctrl-       # Font size increase/decrease
 Ctrl+0              # Reset font size
 ```
 
-### Claude Agent Dashboard
+### Claude Agent Dashboard (WezTerm Plugin)
 
 ```vim
 Ctrl+a → g          # Open agent dashboard (fuzzy search)
-Ctrl+a → r          # Refresh dashboard (reopen with fresh data)
+Ctrl+a → Shift+g    # Open health check overlay
 Ctrl+a → n          # Jump to next agent needing attention
 ```
 
-Dashboard icons: 🤖 (working), 🔔 (attention), ⏸️ (idle)
+**Dashboard icons:** 🤖 (working), 🔔 (attention), ⏸️ (idle), 🔄 (compacting)
+
+**Status files:** `~/.cache/claude-status/pane-*.json`
+
+---
+
+### Claude Observer (Rust TUI)
+
+Standalone monitoring terminal for real-time Claude Code observability.
+
+**Launch:** `claude-observer` (or `claude-observer --debug`)
+
+```vim
+q / Esc             # Quit
+j / Down            # Select next agent
+k / Up              # Select previous agent
+Enter               # Jump to selected agent's WezTerm pane
+d                   # Toggle debug mode (shows event log)
+? / h               # Toggle help
+```
+
+**Features:**
+- Real-time activity sparklines per agent
+- Agent count in header: `Claude Observer (3 agents: 1 working, 2 idle)`
+- Event log (press `d` to toggle)
+- Jump to any agent's terminal
+
+**Socket:** `/tmp/claude-observer.sock`
+**Logs:** `~/.cache/claude-observer/logs/`
+
+**Install:** `cargo build --release && ./target/release/claude-observer --install`
 
 ### Configuration
 

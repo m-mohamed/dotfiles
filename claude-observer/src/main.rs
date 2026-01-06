@@ -40,6 +40,44 @@ struct Cli {
     /// Run in debug mode (shows event log)
     #[arg(short, long, default_value_t = false)]
     debug: bool,
+
+    /// Install binary to ~/.local/bin/
+    #[arg(long, default_value_t = false)]
+    install: bool,
+}
+
+/// Get the log directory path
+fn get_log_dir() -> PathBuf {
+    directories::BaseDirs::new()
+        .map(|dirs| dirs.cache_dir().join("claude-observer").join("logs"))
+        .unwrap_or_else(|| PathBuf::from("/tmp/claude-observer/logs"))
+}
+
+/// Install the binary to ~/.local/bin/
+fn install_binary() -> Result<()> {
+    let current_exe = std::env::current_exe()?;
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    let install_dir = PathBuf::from(home).join(".local").join("bin");
+    let install_path = install_dir.join("claude-observer");
+
+    // Create directory if needed
+    std::fs::create_dir_all(&install_dir)?;
+
+    // Copy binary
+    std::fs::copy(&current_exe, &install_path)?;
+
+    // Make executable (Unix only)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&install_path)?.permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&install_path, perms)?;
+    }
+
+    println!("Installed to: {}", install_path.display());
+    println!("Make sure ~/.local/bin is in your PATH");
+    Ok(())
 }
 
 #[tokio::main]
@@ -47,21 +85,34 @@ async fn main() -> Result<()> {
     // Parse CLI arguments
     let cli = Cli::parse();
 
+    // Handle --install flag
+    if cli.install {
+        return install_binary();
+    }
+
     // Initialize error handling
     color_eyre::install()?;
 
-    // Initialize logging
+    // Setup file logging with rotation
+    let log_dir = get_log_dir();
+    std::fs::create_dir_all(&log_dir)?;
+
+    let file_appender = tracing_appender::rolling::daily(&log_dir, "claude-observer.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
+    // Initialize logging with both file and stderr
     let log_filter = format!("claude_observer={}", cli.log_level);
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(log_filter))
+        .with(tracing_subscriber::EnvFilter::new(&log_filter))
         .with(
             tracing_subscriber::fmt::layer()
-                .with_target(false)
-                .with_writer(std::io::stderr),
+                .with_target(true)
+                .with_writer(non_blocking),
         )
         .init();
 
-    tracing::info!("Starting claude-observer");
+    tracing::info!("Starting claude-observer v{}", env!("CARGO_PKG_VERSION"));
+    tracing::info!("Log directory: {:?}", log_dir);
     tracing::debug!("Socket path: {:?}", cli.socket);
 
     // Create event channel
