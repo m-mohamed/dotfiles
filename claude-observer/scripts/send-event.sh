@@ -40,7 +40,19 @@ else
         "$HOOK_NAME" "$STATUS" "$PANE_ID" "$PROJECT" "$TIMESTAMP")
 fi
 
-# Try to send to socket using Python (nc on macOS doesn't close properly)
+# Always write file for WezTerm plugin (file-based architecture)
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-status"
+mkdir -p "$CACHE_DIR"
+
+if [[ -n "$ATTN_TYPE" ]]; then
+    printf '{"status":"%s","attention_type":"%s","project":"%s","start_time":%s,"pane_id":"%s"}' \
+        "$STATUS" "$ATTN_TYPE" "$PROJECT" "$TIMESTAMP" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
+else
+    printf '{"status":"%s","project":"%s","start_time":%s,"pane_id":"%s"}' \
+        "$STATUS" "$PROJECT" "$TIMESTAMP" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
+fi
+
+# Also send to socket for Rust TUI (real-time architecture, no fallback)
 if [[ -S "$SOCKET" ]]; then
     python3 -c "
 import socket
@@ -51,18 +63,6 @@ try:
     s.sendall(b'$JSON\n')
     s.close()
 except:
-    sys.exit(1)
-" 2>/dev/null && exit 0
-fi
-
-# Fallback: write to file (for WezTerm plugin when observer not running)
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-status"
-mkdir -p "$CACHE_DIR"
-
-if [[ -n "$ATTN_TYPE" ]]; then
-    printf '{"status":"%s","attention_type":"%s","project":"%s","start_time":%s,"pane_id":"%s"}' \
-        "$STATUS" "$ATTN_TYPE" "$PROJECT" "$TIMESTAMP" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
-else
-    printf '{"status":"%s","project":"%s","start_time":%s,"pane_id":"%s"}' \
-        "$STATUS" "$PROJECT" "$TIMESTAMP" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
+    pass  # Socket send is fire-and-forget, TUI handles its own state
+" 2>/dev/null
 fi
