@@ -43,7 +43,7 @@ if [[ "$HOOK_NAME" == "SessionStart" ]]; then
 fi
 
 # Enhanced debug logging with hook name and transition
-echo "$(date '+%Y-%m-%d %H:%M:%S') | hook=$HOOK_NAME $PREV_STATUS→$STATUS attn=$ATTN_TYPE pane=${PANE_ID:-unset} project=${PWD##*/}$SESSION_MARKER" >> "$DEBUG_LOG"
+echo "$(date '+%Y-%m-%d %H:%M:%S') | hook=${HOOK_NAME} ${PREV_STATUS}→${STATUS} attn=${ATTN_TYPE} pane=${PANE_ID:-unset} project=${PWD##*/}${SESSION_MARKER}" >> "$DEBUG_LOG"
 
 # Validate status
 [[ -z "$STATUS" ]] && exit 0
