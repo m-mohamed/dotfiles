@@ -297,10 +297,16 @@ M.open_dashboard = wezterm.action_callback(function(window, pane)
 					-- Emit event
 					wezterm.emit("claude-agent.dashboard.selected", inner_window, pane_id)
 
-					-- Activate pane directly via CLI
-					-- This works globally across all workspaces - no need for SwitchToWorkspace
-					-- (perform_action was async and caused race conditions)
-					if pane_id then
+					-- Navigate to agent using SwitchToWorkspace action
+					-- (smart_workspace_switcher pattern - native WezTerm actions are most reliable)
+					if nav_workspace and nav_workspace ~= "" then
+						-- Workspace switch brings us to the correct tab/pane
+						inner_window:perform_action(
+							act.SwitchToWorkspace({ name = nav_workspace }),
+							inner_pane
+						)
+					elseif pane_id then
+						-- Fallback: CLI activate-pane if no workspace info
 						wezterm.run_child_process({
 							M.options.wezterm_cli_path,
 							"cli",
@@ -331,9 +337,14 @@ M.jump_to_next_waiting = wezterm.action_callback(function(window, pane)
 			if agent.status == "attention" then
 				wezterm.log_info("claude-agent: Jumping to attention agent")
 
-				-- Activate pane directly via CLI
-				-- This works globally across all workspaces - no need for SwitchToWorkspace
-				if agent.pane_id then
+				-- Navigate using SwitchToWorkspace (smart_workspace_switcher pattern)
+				if agent.nav_workspace and agent.nav_workspace ~= "" then
+					window:perform_action(
+						act.SwitchToWorkspace({ name = agent.nav_workspace }),
+						pane
+					)
+				elseif agent.pane_id then
+					-- Fallback: CLI activate-pane if no workspace info
 					wezterm.run_child_process({
 						M.options.wezterm_cli_path,
 						"cli",

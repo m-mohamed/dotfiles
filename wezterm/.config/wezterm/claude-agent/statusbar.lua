@@ -1,4 +1,5 @@
--- claude-agent/statusbar.lua - Status bar cell builders
+-- claude-agent/statusbar.lua - Status bar (domain, workspace, leader, process)
+-- NOTE: Agent counts removed - use dashboard (Ctrl+A G) for agent status
 local wezterm = require("wezterm")
 local colors = require("claude-agent.colors")
 local status = require("claude-agent.status")
@@ -6,7 +7,6 @@ local M = {}
 
 -- Default options
 M.options = {
-	show_idle = true,
 	separator = " │ ",
 }
 
@@ -21,44 +21,6 @@ M.setup = function(opts)
 	end
 end
 
--- Build a single status cell (icon + count)
-local function status_cell(icon, count, color)
-	if count <= 0 then
-		return {}
-	end
-	return {
-		{ Foreground = { Color = color } },
-		{ Text = icon .. count },
-	}
-end
-
--- Build agent summary cells (4-state system: working, compacting, attention, idle)
-M.build_agent_cells = function(counts)
-	local cells = {}
-
-	local function append(new_cells, needs_space)
-		if #new_cells > 0 then
-			if needs_space and #cells > 0 then
-				table.insert(cells, { Text = " " })
-			end
-			for _, cell in ipairs(new_cells) do
-				table.insert(cells, cell)
-			end
-		end
-	end
-
-	-- 4-state display: working 🤖, compacting 🔄, attention 🔔, idle ⏸️
-	append(status_cell(colors.icons.working, counts.working, colors.status.working), false)
-	append(status_cell(colors.icons.compacting, counts.compacting or 0, colors.status.compacting), true)
-	append(status_cell(colors.icons.attention, counts.attention, colors.status.attention), true)
-
-	if M.options.show_idle then
-		append(status_cell(colors.icons.idle, counts.idle, colors.status.idle), true)
-	end
-
-	return cells
-end
-
 -- Register status bar update event
 M.register_events = function()
 	wezterm.on("update-right-status", function(window, _)
@@ -70,20 +32,7 @@ M.register_events = function()
 			local cells = {}
 			local sep = M.options.separator
 
-			-- Section 1: Agent counts (4-state system)
-			local counts = status.count_agents(window:mux_window())
-			local agent_cells = M.build_agent_cells(counts)
-			local has_agents = counts.working + (counts.compacting or 0) + counts.attention + counts.idle > 0
-
-			if has_agents then
-				for _, cell in ipairs(agent_cells) do
-					table.insert(cells, cell)
-				end
-				table.insert(cells, { Foreground = { Color = colors.ui.muted } })
-				table.insert(cells, { Text = sep })
-			end
-
-			-- Section 2: Domain
+			-- Section 1: Domain
 			local active_pane = window:active_pane()
 			if not active_pane then
 				return

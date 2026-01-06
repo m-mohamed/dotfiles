@@ -96,8 +96,25 @@ M.run_health_check = function(mux_window)
 		issues = {},
 	}
 
-	-- NOTE: User var mismatch detection removed - pane:pane_id() returns mux IDs
-	-- which don't match CLI pane IDs in status files. The comparison would never work.
+	-- Check for CLI panes missing status files (hooks not firing)
+	local cli_pane_count = 0
+	for pane_id, _ in pairs(results.cli_panes) do
+		cli_pane_count = cli_pane_count + 1
+		-- Check if this pane has a status file
+		local has_status = false
+		for _, f in ipairs(results.status_files) do
+			if tostring(f.pane_id) == pane_id then
+				has_status = true
+				break
+			end
+		end
+		if not has_status then
+			table.insert(results.issues, string.format(
+				"MISSING: pane %s has no status file (hooks not configured or not firing)",
+				pane_id
+			))
+		end
+	end
 
 	-- Check for stale working statuses
 	for _, file_data in ipairs(results.status_files) do

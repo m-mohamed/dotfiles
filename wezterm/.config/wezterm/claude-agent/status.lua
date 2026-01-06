@@ -10,10 +10,8 @@ local cache = {}
 local cache_order = {}
 local last_cleanup = 0 -- Allow first cleanup to run immediately on startup
 
--- CLI cache for count_agents() - avoid subprocess spam
--- Use call counter instead of time (os.time() only has second resolution)
-local cli_cache = { data = nil, call_count = 0 }
-local CLI_CACHE_CALLS = 4 -- Refresh every N calls (at 50ms poll = refresh every 200ms)
+-- NOTE: No CLI caching - M1 Pro handles direct polling fine
+-- Dashboard is primary consumer of count_agents() now
 
 -- Default cache directory (respects XDG_CACHE_HOME) - exported for init.lua
 M.get_default_dir = function()
@@ -265,17 +263,8 @@ M.count_agents = function(mux_window)
 	-- mux_window is unused but kept for API compatibility
 	local counts = { working = 0, compacting = 0, attention = 0, idle = 0 }
 
-	-- Use cached CLI data (refresh every N calls to avoid subprocess spam)
-	cli_cache.call_count = cli_cache.call_count + 1
-	local cli_panes
-	if cli_cache.data and cli_cache.call_count < CLI_CACHE_CALLS then
-		cli_panes = cli_cache.data
-	else
-		cli_panes = M.get_cli_panes()
-		cli_cache.data = cli_panes
-		cli_cache.call_count = 0 -- Reset counter
-	end
-
+	-- Direct CLI call - no caching (M1 Pro handles it fine)
+	local cli_panes = M.get_cli_panes()
 	if not cli_panes then
 		return counts
 	end
