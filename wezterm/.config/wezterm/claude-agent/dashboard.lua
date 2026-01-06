@@ -57,8 +57,9 @@ end
 M.get_agents = function()
 	local agents = {}
 
-	-- Clear status cache to ensure fresh reads
-	status.clear_cache()
+	-- NOTE: Removed aggressive status.clear_cache() call here
+	-- Cache TTL (1s) handles freshness. Clearing on every dashboard open
+	-- defeated the LRU caching mechanism and caused unnecessary file I/O.
 
 	-- PRIMARY: Scan filesystem for all status files (like Health Check does)
 	-- This is more reliable than CLI enumeration in callback contexts

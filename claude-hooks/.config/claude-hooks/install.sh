@@ -60,11 +60,11 @@ if [[ "${1:-}" == "--all" ]]; then
     install_to_project "$project"
   done
   echo ""
-  echo "Done! All projects synced with 9-hook configuration."
+  echo "Done! All projects synced with 10-hook configuration."
   echo ""
   echo "Hooks enabled:"
   echo "  SessionStart, UserPromptSubmit, PreToolUse, PostToolUse,"
-  echo "  PermissionRequest, Notification, Stop, SessionEnd, PreCompact"
+  echo "  PermissionRequest, Notification, Stop, SessionEnd, PreCompact, SubagentStop"
   exit 0
 fi
 
@@ -94,7 +94,7 @@ install_to_project "$PROJECT"
 echo ""
 echo "Hooks enabled:"
 echo "  SessionStart, UserPromptSubmit, PreToolUse, PostToolUse,"
-echo "  PermissionRequest, Notification, Stop, SessionEnd, PreCompact"
+echo "  PermissionRequest, Notification, Stop, SessionEnd, PreCompact, SubagentStop"
 echo ""
 echo "Test with: cd $PROJECT && claude --debug"
 echo "Then run /hooks to verify"

@@ -153,6 +153,13 @@ M.read_file = function(pane_id)
 		return nil
 	end
 
+	-- Validate status is one of our 4 known states
+	local valid_statuses = { idle = true, working = true, attention = true, compacting = true }
+	if not valid_statuses[data.status] then
+		wezterm.log_warn("claude-agent: Invalid status '" .. tostring(data.status) .. "' for pane " .. tostring(pane_id))
+		return nil
+	end
+
 	return data
 end
 

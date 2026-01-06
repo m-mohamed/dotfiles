@@ -1,4 +1,11 @@
 -- claude-agent/statusbar.lua - Status bar (domain, workspace, leader, process)
+--
+-- STATUS: DISABLED - This module is NOT registered in init.lua
+-- Kept for reference in case status bar agent counts are wanted later.
+-- The dashboard (Ctrl+A G) is now the primary way to view agent status.
+--
+-- To enable: uncomment M.statusbar.register_events() in init.lua:141
+--
 -- NOTE: Agent counts removed - use dashboard (Ctrl+A G) for agent status
 local wezterm = require("wezterm")
 local colors = require("claude-agent.colors")

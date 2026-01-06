@@ -107,6 +107,18 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/dotfiles/claude-observer/scripts/send-event.sh working '' SubagentStop",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

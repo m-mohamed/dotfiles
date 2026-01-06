@@ -86,11 +86,11 @@ Claude Code Hooks → write-status.sh → pane-{id}.json
 
 | File | Purpose |
 |------|---------|
-| `write-status.sh` | Hook script - writes status JSON |
+| `send-event.sh` | Bridge script - writes status JSON + sends to socket |
 | `status.lua` | Status file reading, caching, cleanup |
 | `dashboard.lua` | Agent dashboard UI (Leader+G) |
 | `diagnostics.lua` | Health check UI (Leader+Shift+G) |
-| `statusbar.lua` | Status bar segment |
+| `statusbar.lua` | Status bar segment (DISABLED - kept for reference) |
 | `colors.lua` | Icon/color definitions |
 
 ---
@@ -115,6 +115,24 @@ cat ~/.cache/claude-status/*.json | jq .
 ---
 
 ## Recent Fixes
+
+### 2026-01-06: End-to-End Audit Improvements
+
+**Bridge Layer (send-event.sh):**
+- Fixed JSON escaping vulnerability - now uses `jq` for proper escaping
+- Fixed Python code injection - JSON passed via stdin, not shell substitution
+- Added logging when WEZTERM_PANE is unset (was silent failure)
+- Added socket timeout (500ms) to prevent hanging
+
+**WezTerm Plugin:**
+- Added JSON schema validation - rejects invalid status values
+- Fixed cache clearing - removed aggressive clear_cache() that defeated LRU
+- Documented statusbar.lua as disabled
+
+**Rust TUI:**
+- Added connection limiting (100 max) via semaphore
+- Added exponential backoff on socket accept errors
+- Prevents CPU spin and memory exhaustion under load
 
 ### 2026-01-05: Notification noise reduction + Startup cleanup
 - Kept "Claude Done" notification (Stop hook) - useful when multitasking

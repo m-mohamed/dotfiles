@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2025-01-06
+
+### Fixed
+- JSON escaping vulnerability in send-event.sh - now uses `jq` for proper escaping
+- Python code injection in send-event.sh - JSON now passed via stdin
+- Silent WEZTERM_PANE failure - now logs to debug.log
+- Aggressive cache clearing in WezTerm dashboard that defeated LRU
+- Unbounded socket task spawning in Rust TUI - added 100 connection limit
+- Socket accept error loop in Rust TUI - added exponential backoff
+
+### Added
+- SubagentStop hook for Task tool completion (now 10 hooks total)
+- JSON schema validation in WezTerm plugin (rejects invalid status values)
+- Socket timeout (500ms) in send-event.sh to prevent hanging
+
+### Changed
+- statusbar.lua documented as intentionally disabled
+
 ## [0.6.1] - 2025-01-04
 
 ### Changed
