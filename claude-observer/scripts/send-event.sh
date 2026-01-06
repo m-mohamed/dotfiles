@@ -40,12 +40,13 @@ else
         "$HOOK_NAME" "$STATUS" "$PANE_ID" "$PROJECT" "$TIMESTAMP")
 fi
 
-# Try to send to socket
+# Try to send to socket (fire-and-forget with timeout)
 if [[ -S "$SOCKET" ]]; then
-    echo "$JSON" | nc -U "$SOCKET" 2>/dev/null && exit 0
+    (echo "$JSON" | nc -U -w 1 "$SOCKET" 2>/dev/null) &
+    exit 0
 fi
 
-# Fallback: write to file (for backward compatibility with WezTerm plugin)
+# Fallback: write to file (for WezTerm plugin when observer not running)
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/claude-status"
 mkdir -p "$CACHE_DIR"
 
