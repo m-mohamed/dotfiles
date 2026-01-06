@@ -62,6 +62,14 @@ brew "tailscale"                 # Private network CLI for remote access
 cask "tailscale"                 # Tailscale GUI app (menu bar)
 
 # ══════════════════════════════════════════════════════════════════════
+# Rust Development
+# ══════════════════════════════════════════════════════════════════════
+brew "rustup"                    # Rust toolchain manager (includes cargo, rustc, rustfmt, clippy)
+brew "rust-analyzer"             # Rust Language Server Protocol (LSP)
+brew "bacon"                     # Background Rust code checker (better than cargo-watch)
+brew "sccache"                   # Shared compilation cache for faster builds
+
+# ══════════════════════════════════════════════════════════════════════
 # Development Tools
 # ══════════════════════════════════════════════════════════════════════
 brew "git"                       # Version control
