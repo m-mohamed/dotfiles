@@ -250,42 +250,32 @@ M.cleanup_stale_files = function()
 	})
 end
 
--- Count agents by status across all panes in a mux window
--- For statusbar: uses user_vars (reliable for current window) and title detection
--- NOTE: File-based status won't work here because pane:pane_id() returns mux IDs
--- that don't match the $WEZTERM_PANE used in status filenames
--- 4-state system: working, compacting, attention, idle (+ unknown for detected but no status)
+-- Count agents by status using CLI enumeration + file-based status
+-- This works because:
+-- 1. CLI gives us real pane IDs ($WEZTERM_PANE values)
+-- 2. Status files are keyed by CLI pane ID
+-- 3. No mux ID vs CLI ID mismatch
+-- 4-state system: working, compacting, attention, idle
 M.count_agents = function(mux_window)
-	local counts = { working = 0, compacting = 0, attention = 0, idle = 0, unknown = 0 }
-	local tabs = mux_window:tabs()
-	if not tabs then
+	-- mux_window is unused but kept for API compatibility
+	local counts = { working = 0, compacting = 0, attention = 0, idle = 0 }
+
+	-- Use CLI to get pane IDs (same approach as dashboard)
+	local cli_panes = M.get_cli_panes()
+	if not cli_panes then
 		return counts
 	end
-	for _, tab in ipairs(tabs) do
-		local panes = tab:panes()
-		if panes then
-			for _, pane in ipairs(panes) do
-				local title = pane:get_title() or ""
 
-				-- Primary: user vars (works reliably for current window panes)
-				local user_var_status = M.read_user_var(pane)
-
-				-- Detection: user var present OR title matches Claude patterns
-				local has_user_var = user_var_status ~= nil
-				local has_claude_title = title:match("^✳")
-					or title:lower():match("claude")
-					or title:match("^%d+%.%d+%.%d+$") -- version like "2.0.75"
-
-				if has_user_var or has_claude_title then
-					-- Use user_var status if available, otherwise unknown
-					local agent_status = user_var_status or "unknown"
-					if counts[agent_status] ~= nil then
-						counts[agent_status] = counts[agent_status] + 1
-					end
-				end
+	-- Read status files using CLI pane IDs
+	for _, cli_pane in ipairs(cli_panes) do
+		local status_data = M.read_file(cli_pane.pane_id)
+		if status_data and status_data.status then
+			if counts[status_data.status] then
+				counts[status_data.status] = counts[status_data.status] + 1
 			end
 		end
 	end
+
 	return counts
 end
 
