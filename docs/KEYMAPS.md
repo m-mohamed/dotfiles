@@ -1555,7 +1555,7 @@ Ctrl+a → r          # Refresh dashboard (reopen with fresh data)
 Ctrl+a → n          # Jump to next agent needing attention
 ```
 
-Status bar shows: 🤖 (working), 🔔 (attention), ⏸️ (idle)
+Dashboard icons: 🤖 (working), 🔔 (attention), ⏸️ (idle)
 
 ### Configuration
 

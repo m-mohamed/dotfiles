@@ -103,10 +103,8 @@ M.setup = function(opts)
 		cache_ttl = M.options.cache_ttl,
 	})
 
-	M.statusbar.setup({
-		show_idle = M.options.show_idle,
-		separator = M.options.separator,
-	})
+	-- Statusbar disabled - using dashboard-only approach
+	-- M.statusbar.setup({ ... })
 
 	-- Setup analytics (if enabled)
 	if M.options.analytics and M.options.analytics.enabled ~= false then
@@ -121,7 +119,8 @@ M.setup = function(opts)
 
 	-- Register event handlers (only once)
 	if not initialized then
-		M.statusbar.register_events()
+		-- Statusbar disabled - using dashboard-only approach
+		-- M.statusbar.register_events()
 
 		-- Register analytics event handlers (if enabled)
 		if M.options.analytics and M.options.analytics.enabled ~= false then
