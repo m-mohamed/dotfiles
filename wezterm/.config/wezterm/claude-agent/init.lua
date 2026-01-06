@@ -86,9 +86,27 @@ local function merge_options(defaults, overrides)
 	return result
 end
 
+-- Cleanup stale status files on startup
+-- This runs every time WezTerm loads config (including wezterm connect)
+local function cleanup_stale_files()
+	local status_dir = default_options.status_dir
+	-- Safe: only delete pane-*.json files, not the directory
+	local handle = io.popen('rm -f "' .. status_dir .. '"/pane-*.json 2>/dev/null')
+	if handle then
+		handle:close()
+	end
+	wezterm.log_info("claude-agent: Cleaned stale status files from " .. status_dir)
+end
+
 -- Setup function - initialize plugin and register events (tabline.wez pattern)
 -- Call this once to configure options and register event handlers
 M.setup = function(opts)
+	-- Clean stale files on first initialization
+	-- Active Claude sessions will recreate their files via hooks
+	if not initialized then
+		cleanup_stale_files()
+	end
+
 	-- Merge options
 	M.options = merge_options(default_options, opts)
 

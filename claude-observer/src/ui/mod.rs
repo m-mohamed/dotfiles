@@ -5,8 +5,10 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::*,
     style::{Modifier, Style},
+    symbols,
     widgets::{
-        Block, Borders, Cell, List, ListItem, Paragraph, Row, Sparkline, Table,
+        Block, Borders, Cell, List, ListItem, Paragraph, RenderDirection, Row, Sparkline,
+        SparklineBar, Table,
     },
     Frame,
 };
@@ -137,20 +139,51 @@ fn render_activity(f: &mut Frame, area: Rect, app: &App) {
         .constraints(constraints)
         .split(area);
 
+    // Get current time for pulse animation
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
     for (i, agent) in agents.iter().enumerate() {
         if i >= chunks.len() {
             break;
         }
 
-        let data: Vec<u64> = agent
+        let base_color = status_base_color(&agent.status);
+        let is_working = matches!(agent.status, Status::Working);
+
+        // Create SparklineBars with pulse effect for working status
+        let data: Vec<SparklineBar> = agent
             .activity
             .iter()
-            .map(|v| (v * 8.0) as u64)
+            .enumerate()
+            .map(|(idx, v)| {
+                let value = (v * 8.0) as u64;
+                let bar = SparklineBar::from(value);
+
+                // Pulse effect: recent bars glow brighter when working
+                if is_working && idx >= agent.activity.len().saturating_sub(5) {
+                    // Pulse based on time - creates a breathing effect
+                    let pulse = ((now / 100) % 10) as usize;
+                    let intensity = if (idx + pulse) % 3 == 0 {
+                        colors::WORKING_BRIGHT // Brighter pulse
+                    } else {
+                        base_color
+                    };
+                    bar.style(Style::default().fg(intensity))
+                } else {
+                    bar.style(Style::default().fg(base_color))
+                }
+            })
             .collect();
 
         let sparkline = Sparkline::default()
-            .data(&data)
-            .style(status_color(&agent.status))
+            .data(data)
+            .direction(RenderDirection::LeftToRight)
+            .bar_set(symbols::bar::NINE_LEVELS)
+            .absent_value_style(Style::default().fg(colors::BG_LIGHT))
+            .absent_value_symbol(symbols::bar::NINE_LEVELS.empty)
             .block(
                 Block::default()
                     .title(format!(" {} ", truncate(&agent.project, 12)))
@@ -252,13 +285,16 @@ fn render_help(f: &mut Frame) {
 // Helper functions
 
 fn status_color(status: &Status) -> Style {
-    let color = match status {
+    Style::default().fg(status_base_color(status))
+}
+
+fn status_base_color(status: &Status) -> Color {
+    match status {
         Status::Working => colors::WORKING,
         Status::Attention(_) => colors::ATTENTION,
         Status::Compacting => colors::COMPACTING,
         Status::Idle => colors::IDLE,
-    };
-    Style::default().fg(color)
+    }
 }
 
 fn status_progress_bar(status: &Status) -> String {
