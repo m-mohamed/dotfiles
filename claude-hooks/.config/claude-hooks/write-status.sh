@@ -42,8 +42,12 @@ if [[ "$HOOK_NAME" == "SessionStart" ]]; then
   SESSION_MARKER=" [NEW SESSION]"
 fi
 
+# Get git repo name (most reliable project identifier)
+# Falls back to current folder name if not in a git repo
+REPO_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "${PWD##*/}")
+
 # Enhanced debug logging with hook name and transition
-echo "$(date '+%Y-%m-%d %H:%M:%S') | hook=${HOOK_NAME} ${PREV_STATUS}→${STATUS} attn=${ATTN_TYPE} pane=${PANE_ID:-unset} project=${PWD##*/}${SESSION_MARKER}" >> "$DEBUG_LOG"
+echo "$(date '+%Y-%m-%d %H:%M:%S') | hook=${HOOK_NAME} ${PREV_STATUS}→${STATUS} attn=${ATTN_TYPE} pane=${PANE_ID:-unset} project=${REPO_NAME}${SESSION_MARKER}" >> "$DEBUG_LOG"
 
 # Validate status
 [[ -z "$STATUS" ]] && exit 0
@@ -61,10 +65,10 @@ fi
 # Write status file (source of truth)
 if [[ -n "$ATTN_TYPE" ]]; then
   printf '{"status":"%s","attention_type":"%s","project":"%s","start_time":%s,"pane_id":"%s"}' \
-    "$STATUS" "$ATTN_TYPE" "${PWD##*/}" "$(date +%s)" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
+    "$STATUS" "$ATTN_TYPE" "$REPO_NAME" "$(date +%s)" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
 else
   printf '{"status":"%s","project":"%s","start_time":%s,"pane_id":"%s"}' \
-    "$STATUS" "${PWD##*/}" "$(date +%s)" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
+    "$STATUS" "$REPO_NAME" "$(date +%s)" "$PANE_ID" > "$CACHE_DIR/pane-$PANE_ID.json"
 fi
 
 # Success is implicit if we reach here without error

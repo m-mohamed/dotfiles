@@ -125,7 +125,6 @@ M.run_health_check = function(mux_window)
 		cli_panes = M.get_cli_panes(),
 		mismatches = {},
 		stale_statuses = {},
-		orphan_files = {},
 		issues = {},
 	}
 
@@ -181,42 +180,8 @@ M.run_health_check = function(mux_window)
 		end
 	end
 
-	-- Check for orphan files (files for panes that don't exist)
-	-- SAFETY: Only flag orphans if CLI returned meaningful data
-	-- wezterm.run_child_process is unreliable in InputSelector callback contexts
-	local cli_pane_count = 0
-	for _ in pairs(results.cli_panes) do
-		cli_pane_count = cli_pane_count + 1
-	end
-	local status_file_count = #results.status_files
-
-	if cli_pane_count == 0 then
-		-- CLI returned empty - skip orphan detection entirely
-		table.insert(results.issues, "CLI enumeration unavailable - orphan detection skipped")
-	elseif cli_pane_count < status_file_count then
-		-- CLI returned fewer panes than status files - likely CLI failure
-		table.insert(results.issues, string.format(
-			"CLI returned %d panes but %d status files exist - possible CLI failure",
-			cli_pane_count, status_file_count
-		))
-	else
-		-- CLI returned meaningful data - safe to check for orphans
-		for pane_id_str, file_data in pairs(file_by_pane) do
-			if not results.cli_panes[pane_id_str] then
-				table.insert(results.orphan_files, {
-					pane_id = file_data.pane_id,
-					filename = file_data.filename,
-				})
-				table.insert(results.issues, string.format(
-					"ORPHAN: pane-%d.json exists but pane not found",
-					file_data.pane_id
-				))
-
-				-- Log to analytics
-				analytics.log_orphan_file(file_data.pane_id, "pane_not_found")
-			end
-		end
-	end
+	-- NOTE: Orphan detection removed - CLI is unreliable in InputSelector callback contexts
+	-- and caused false positives. Real orphan cleanup happens at WezTerm startup (status.lua).
 
 	return results
 end

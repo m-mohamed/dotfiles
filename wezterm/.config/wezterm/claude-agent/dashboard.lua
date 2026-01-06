@@ -116,11 +116,10 @@ M.get_agents = function()
 					-- Get CLI metadata if available, otherwise use fallbacks
 					local cli_pane = cli_lookup[pane_id_str]
 					local workspace = (cli_pane and cli_pane.workspace) or status_data.project or "unknown"
-					local title = (cli_pane and cli_pane.title) or status_data.project or "Claude Agent"
+					-- Project/repo name comes from status file (git repo name from hooks)
+					-- CLI title is unreliable (can be "2.0.75" Claude version)
+					local project = status_data.project or "unknown"
 					local tab_id = (cli_pane and cli_pane.tab_id) or 0
-
-					-- Clean title (remove ✳ prefix)
-					local clean_title = title:gsub("^✳%s*", "")
 
 					local agent_status = status_data.status or "unknown"
 
@@ -128,8 +127,7 @@ M.get_agents = function()
 						tab_id = tab_id,
 						pane_id = pane_id,
 						workspace = workspace,
-						project = status_data.project or workspace,
-						title = clean_title,
+						project = project,
 						status = agent_status,
 						start_time = status_data.start_time,
 						priority = status_priority[agent_status] or 5,
@@ -205,14 +203,14 @@ M.get_choices = function()
 		local icon = colors.icons[agent.status] or colors.icons.unknown
 		local color = colors.status[agent.status] or colors.status.unknown
 
-		-- Build formatted label
+		-- Build formatted label: [workspace] project (elapsed)
 		local label_parts = {
 			{ Foreground = { Color = color } },
 			{ Text = icon .. " " },
 			{ Foreground = { Color = colors.ui.muted } },
 			{ Text = "[" .. agent.workspace .. "] " },
 			{ Foreground = { Color = colors.ui.fg } },
-			{ Text = agent.title },
+			{ Text = agent.project },
 			{ Foreground = { Color = colors.ui.muted } },
 			{ Text = elapsed_str },
 		}
