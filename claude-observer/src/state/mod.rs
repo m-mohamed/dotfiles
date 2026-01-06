@@ -38,6 +38,11 @@ impl AppState {
         agent.last_event = event.event.clone();
         agent.last_update = current_timestamp();
 
+        // Set start_time on first event or session start
+        if agent.start_time == 0 || event.event == "SessionStart" {
+            agent.start_time = event.timestamp;
+        }
+
         // Add activity point for sparkline
         let activity_value = match &agent.status {
             Status::Working => 1.0,

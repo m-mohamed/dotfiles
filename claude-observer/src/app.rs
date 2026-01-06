@@ -72,15 +72,24 @@ impl App {
         }
     }
 
-    /// Tick for updating elapsed times
+    /// Tick for updating elapsed times and sparklines
     pub fn tick(&mut self) {
-        // Update activity sparklines with current values
+        // Use timestamp for pseudo-random variation
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
+        // Update activity sparklines with varied values
         for agent in self.state.agents.values_mut() {
+            // Add variation based on time (0.0 to 0.2 range)
+            let variation = ((now % 100) as f64) / 500.0;
+
             let activity_value = match &agent.status {
-                crate::state::Status::Working => 1.0,
-                crate::state::Status::Attention(_) => 0.8,
-                crate::state::Status::Compacting => 0.6,
-                crate::state::Status::Idle => 0.1,
+                crate::state::Status::Working => 0.8 + variation,
+                crate::state::Status::Attention(_) => 0.6 + variation,
+                crate::state::Status::Compacting => 0.4 + variation,
+                crate::state::Status::Idle => 0.05 + (variation * 0.5),
             };
             agent.activity.push_back(activity_value);
             if agent.activity.len() > crate::config::MAX_SPARKLINE_POINTS {
