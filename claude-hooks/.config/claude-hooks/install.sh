@@ -15,6 +15,7 @@ PROJECTS=(
   "$HOME/startups/avaza"
   "$HOME/startups/avaza-vri"
   "$HOME/startups/ring-chase/fantasy-basketball-agent"
+  "$HOME/obsidian/slipbox"
 )
 
 # Get the directory where this script lives
