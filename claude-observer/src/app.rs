@@ -69,30 +69,18 @@ impl App {
         }
     }
 
-    /// Tick for updating elapsed times and sparklines
+    /// Tick for triggering re-renders
+    ///
+    /// Best practice from ratatui async-template:
+    /// - Events update state (hook events push activity data)
+    /// - Ticks trigger re-render only (no new data)
+    ///
+    /// This ensures sparkline consistency - activity values only come
+    /// from real hook events, not synthesized tick data.
     pub fn tick(&mut self) {
-        // Use timestamp for pseudo-random variation
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
-
-        // Update activity sparklines with varied values
-        for agent in self.state.agents.values_mut() {
-            // Add variation based on time (0.0 to 0.2 range)
-            let variation = ((now % 100) as f64) / 500.0;
-
-            let activity_value = match &agent.status {
-                crate::state::Status::Working => 0.8 + variation,
-                crate::state::Status::Attention(_) => 0.6 + variation,
-                crate::state::Status::Compacting => 0.4 + variation,
-                crate::state::Status::Idle => 0.05 + (variation * 0.5),
-            };
-            agent.activity.push_back(activity_value);
-            if agent.activity.len() > crate::config::MAX_SPARKLINE_POINTS {
-                agent.activity.pop_front();
-            }
-        }
+        // No-op: Activity data comes from hook events only.
+        // Tick exists to trigger re-render at 1-second intervals.
+        // See: https://github.com/ratatui-org/async-template
     }
 
     /// Jump to selected agent using wezterm CLI
