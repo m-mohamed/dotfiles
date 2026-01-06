@@ -212,6 +212,26 @@ wezterm.log_info("claude-agent: CLI panes count: " .. (next(cli_panes) and "has 
 
 ## Recent Fixes
 
+### 2025-01-05: Dashboard filesystem scan (dashboard.lua)
+
+Changed `get_agents()` to use filesystem scan as primary source instead of CLI enumeration:
+
+**Before (broken):**
+```
+CLI enumeration → Filter → Display
+   ↓
+May miss panes when CLI fails!
+```
+
+**After (fixed):**
+```
+Filesystem scan → Enhance with CLI metadata → Display
+   ↓
+Finds ALL status files reliably
+```
+
+File: `dashboard.lua` lines 79-150
+
 ### 2025-01-05: Safety check in cleanup_stale_files()
 
 Added check to skip orphan cleanup when CLI returns empty:

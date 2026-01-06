@@ -74,53 +74,67 @@ M.setup = function(opts)
 end
 
 -- Collect all Claude agents with metadata
--- Uses wezterm CLI for pane enumeration to get correct pane_ids that match $WEZTERM_PANE
+-- PRIMARY: Scans filesystem for status files (reliable, like Health Check)
+-- SECONDARY: Uses CLI for metadata (title, workspace) when available
 M.get_agents = function()
 	local agents = {}
 
-	-- Clear status cache to ensure fresh reads (pane IDs are unstable with Unix domains)
+	-- Clear status cache to ensure fresh reads
 	status.clear_cache()
 
-	-- Get panes from CLI (correct pane_ids)
-	local cli_panes = get_cli_panes()
-	if not cli_panes then
-		wezterm.log_warn("claude-agent: CLI pane enumeration failed")
-		cli_panes = {}
+	-- PRIMARY: Scan filesystem for all status files (like Health Check does)
+	-- This is more reliable than CLI enumeration in callback contexts
+	local status_dir = status.options.status_dir
+	local ok, entries = pcall(wezterm.read_dir, status_dir)
+
+	if not ok or not entries then
+		wezterm.log_warn("claude-agent: Failed to read status directory")
+		return agents
 	end
 
-	for _, cli_pane in ipairs(cli_panes) do
-		local pane_id = cli_pane.pane_id
-		local workspace = cli_pane.workspace or "default"
-		local title = cli_pane.title or ""
-		local tab_id = cli_pane.tab_id or 0
+	-- Build lookup of CLI panes for metadata (title, workspace)
+	-- CLI may return partial data, so we use it only for enhancement
+	local cli_lookup = {}
+	local cli_panes = get_cli_panes()
+	if cli_panes then
+		for _, p in ipairs(cli_panes) do
+			cli_lookup[tostring(p.pane_id)] = p
+		end
+	end
 
-		-- Read status file using CLI's pane_id (matches $WEZTERM_PANE)
-		local status_data = status.read_cached(pane_id)
+	-- Process each status file found in directory
+	for _, filepath in ipairs(entries) do
+		local filename = filepath:match("([^/]+)$")
+		if filename then
+			local pane_id_str = filename:match("pane%-(%d+)%.json")
+			if pane_id_str then
+				local pane_id = tonumber(pane_id_str)
+				local status_data = status.read_file(pane_id)
 
-		-- Check if this is a Claude Code pane
-		local has_status_file = status_data ~= nil
-		local has_claude_title = title:match("^✳")
-			or title:lower():match("claude")
-			or title:match("^%d+%.%d+%.%d+$") -- version like "2.0.75"
+				if status_data then
+					-- Get CLI metadata if available, otherwise use fallbacks
+					local cli_pane = cli_lookup[pane_id_str]
+					local workspace = (cli_pane and cli_pane.workspace) or status_data.project or "unknown"
+					local title = (cli_pane and cli_pane.title) or status_data.project or "Claude Agent"
+					local tab_id = (cli_pane and cli_pane.tab_id) or 0
 
-		if has_status_file or has_claude_title then
-			local agent_status = (status_data and status_data.status) or "unknown"
-			local start_time = status_data and status_data.start_time
-			local project = status_data and status_data.project or workspace
+					-- Clean title (remove ✳ prefix)
+					local clean_title = title:gsub("^✳%s*", "")
 
-			-- Clean title (remove ✳ prefix)
-			local clean_title = title:gsub("^✳%s*", "")
+					local agent_status = status_data.status or "unknown"
 
-			table.insert(agents, {
-				tab_id = tab_id,
-				pane_id = pane_id,
-				workspace = workspace,
-				project = project,
-				title = clean_title,
-				status = agent_status,
-				start_time = start_time,
-				priority = status_priority[agent_status] or 5,
-			})
+					table.insert(agents, {
+						tab_id = tab_id,
+						pane_id = pane_id,
+						workspace = workspace,
+						project = status_data.project or workspace,
+						title = clean_title,
+						status = agent_status,
+						start_time = status_data.start_time,
+						priority = status_priority[agent_status] or 5,
+					})
+				end
+			end
 		end
 	end
 
