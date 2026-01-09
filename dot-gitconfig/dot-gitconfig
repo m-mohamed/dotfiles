@@ -1,0 +1,34 @@
+[init]
+	defaultBranch = main
+
+[user]
+	email = moabdulmohamed@gmail.com
+	name = m-mohamed
+
+# ══════════════════════════════════════════════════════════════════════
+# Delta - Better Git Diffs with Tokyo Night
+# ══════════════════════════════════════════════════════════════════════
+[core]
+	pager = delta
+
+[delta]
+	syntax-theme = tokyonight_night
+	line-numbers = true
+	side-by-side = false
+	navigate = true
+	dark = true
+
+[interactive]
+	diffFilter = delta --color-only
+
+[merge]
+	conflictstyle = diff3
+
+[diff]
+	colorMoved = default
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential

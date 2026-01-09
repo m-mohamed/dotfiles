@@ -1,0 +1,51 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# GitHub CLI - contains username
+gh/.config/gh/hosts.yml
+
+# SSH - never commit private keys!
+ssh/.ssh/id_*
+ssh/.ssh/*.pem
+ssh/.ssh/known_hosts
+
+# Backup files
+*.backup
+*.bak
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Environment files with secrets (specific paths, not broad patterns)
+zsh/.config/zsh/modules/00-env-secrets.zsh
+zsh/.config/zsh/modules/*-secrets.zsh
+!zsh/.config/zsh/modules/*-secrets.zsh.example
+.env
+.env.local
+
+# Karabiner automatic backups
+karabiner/.config/karabiner/automatic_backups/
+
+# Claude Code (project-local settings if created in repo root)
+/.claude/
+.mcp.json
+
+# Neovim runtime files
+nvim/.config/nvim/lazy-lock.json
+
+# ZSH generated files
+zsh/.config/zsh/.zcompdump
+zsh/.config/zsh/.zsh_history
+zsh/.config/zsh/.zsh_plugins.zsh
+
+# Local overrides (machine-specific, not tracked)
+zsh/.config/zsh/local.zsh
+
+# macOS system files that might sneak in
+**/~/
+**/.Trash/
+**/Library/Preferences/

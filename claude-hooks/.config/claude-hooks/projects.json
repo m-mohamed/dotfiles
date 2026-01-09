@@ -1,0 +1,8 @@
+[
+  {"path": "~/dotfiles", "name": "dotfiles", "priority": 1},
+  {"path": "~/startups/avaza", "name": "avaza", "priority": 2},
+  {"path": "~/startups/avaza-vri", "name": "avaza-vri", "priority": 3},
+  {"path": "~/startups/ring-chase/fantasy-basketball-agent", "name": "fantasy", "priority": 4},
+  {"path": "~/obsidian/slipbox", "name": "slipbox", "priority": 5},
+  {"path": "~/startups/rehoboam", "name": "rehoboam", "priority": 6}
+]

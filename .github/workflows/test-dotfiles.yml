@@ -1,0 +1,186 @@
+name: Test Dotfiles Installation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly Sunday test to catch dependency drift
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+
+jobs:
+  test-installation:
+    runs-on: macos-14  # ARM64 (Apple Silicon)
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show runner environment
+        run: |
+          echo "Runner: $(uname -m) $(sw_vers -productVersion)"
+          echo "Disk space: $(df -h / | tail -1)"
+          echo "Homebrew: $(brew --version | head -1)"
+          echo "Homebrew prefix: $(brew --prefix)"
+
+      - name: Run install.sh
+        run: |
+          ./install.sh
+
+      - name: Verify critical Homebrew packages installed
+        run: |
+          command -v stow || (echo "❌ stow not installed" && exit 1)
+          command -v zsh || (echo "❌ zsh not installed" && exit 1)
+          command -v eza || (echo "❌ eza not installed" && exit 1)
+          command -v bat || (echo "❌ bat not installed" && exit 1)
+          command -v fzf || (echo "❌ fzf not installed" && exit 1)
+          command -v rg || (echo "❌ ripgrep not installed" && exit 1)
+          command -v fd || (echo "❌ fd not installed" && exit 1)
+          command -v nvim || (echo "❌ nvim not installed" && exit 1)
+          command -v starship || (echo "❌ starship not installed" && exit 1)
+          echo "✓ All critical packages verified"
+
+      - name: Verify XDG directories created
+        run: |
+          test -d ~/.config || (echo "❌ XDG_CONFIG_HOME missing" && exit 1)
+          test -d ~/.local/share || (echo "❌ XDG_DATA_HOME missing" && exit 1)
+          test -d ~/.cache || (echo "❌ XDG_CACHE_HOME missing" && exit 1)
+          test -d ~/.local/state || (echo "❌ XDG_STATE_HOME missing" && exit 1)
+          test -d ~/.local/state/zsh || (echo "❌ ZSH state dir missing" && exit 1)
+          test -w ~/.local/state/zsh || (echo "❌ ZSH state dir not writable" && exit 1)
+          echo "✓ All XDG directories verified"
+
+      - name: Verify stow symlinks created
+        run: |
+          test -L ~/.zshenv || (echo "❌ ~/.zshenv not symlinked" && exit 1)
+          test -L ~/.zprofile || (echo "❌ ~/.zprofile not symlinked" && exit 1)
+          test -L ~/.config/zsh/.zshrc || (echo "❌ ~/.config/zsh/.zshrc not symlinked" && exit 1)
+          test -L ~/.gitconfig || (echo "❌ ~/.gitconfig not symlinked" && exit 1)
+          echo "✓ All critical symlinks verified"
+
+      - name: Test ZSH loads without errors
+        run: |
+          zsh -i -c 'echo "✓ ZSH loaded successfully"'
+
+      - name: Verify Antidote installed
+        run: |
+          test -d ~/.local/share/antidote || (echo "❌ Antidote not installed" && exit 1)
+          test -f ~/.local/share/antidote/antidote.zsh || (echo "❌ antidote.zsh missing" && exit 1)
+          echo "✓ Antidote installed"
+
+      - name: Verify Antidote plugins loaded
+        run: |
+          # Check plugin file was generated
+          test -s ~/.config/zsh/.zsh_plugins.zsh || (echo "❌ Plugin file empty or missing" && exit 1)
+
+          # Verify plugin file has actual plugins (not just comments)
+          plugin_count=$(grep -c "^source " ~/.config/zsh/.zsh_plugins.zsh || true)
+          if [[ "$plugin_count" -eq 0 ]]; then
+            echo "❌ No plugins sourced in .zsh_plugins.zsh"
+            exit 1
+          fi
+
+          # Verify specific plugins are loaded by checking for their functions
+          if ! zsh -i -c 'functions | grep -q zsh-syntax-highlighting'; then
+            echo "❌ zsh-syntax-highlighting not loaded"
+            exit 1
+          fi
+
+          echo "✓ Plugins loaded successfully ($plugin_count plugins)"
+
+      - name: Test core aliases work
+        run: |
+          zsh -i -c 'type c' || (echo "❌ Alias 'c' not found" && exit 1)
+          zsh -i -c 'type v' || (echo "❌ Alias 'v' not found" && exit 1)
+          zsh -i -c 'type ll' || (echo "❌ Alias 'll' not found" && exit 1)
+          echo "✓ Core aliases functional"
+
+      - name: Test modern tools work
+        run: |
+          zsh -i -c 'eza --version' || (echo "❌ eza not working" && exit 1)
+          zsh -i -c 'bat --version' || (echo "❌ bat not working" && exit 1)
+          zsh -i -c 'fzf --version' || (echo "❌ fzf not working" && exit 1)
+          zsh -i -c 'rg --version' || (echo "❌ ripgrep not working" && exit 1)
+          zsh -i -c 'fd --version' || (echo "❌ fd not working" && exit 1)
+          echo "✓ Modern tools functional"
+
+      - name: Test idempotency - run install.sh again
+        run: |
+          echo "Running install.sh second time (should be idempotent)..."
+          ./install.sh
+          echo "✓ Second run succeeded (idempotent)"
+
+      - name: Benchmark ZSH startup time
+        run: |
+          # Check bc is installed
+          if ! command -v bc &>/dev/null; then
+            echo "ERROR: bc not installed in CI"
+            exit 1
+          fi
+
+          echo "Running startup benchmark (5 iterations)..."
+          total=0
+          runs=5
+
+          for i in $(seq 1 $runs); do
+            result=$( { /usr/bin/time -p zsh -i -c exit 2>&1; } | grep real | awk '{print $2}')
+
+            # Validate result
+            if [[ -z "$result" ]]; then
+              echo "ERROR: Time parsing failed"
+              exit 1
+            fi
+
+            ms=$(echo "$result * 1000" | bc)
+
+            # Validate conversion
+            if [[ -z "$ms" ]] || [[ "$ms" == "0" ]]; then
+              echo "ERROR: Time conversion failed. Got: '$result'"
+              exit 1
+            fi
+
+            echo "Run $i: ${ms}ms"
+            total=$(echo "$total + $ms" | bc)
+          done
+
+          avg=$(echo "scale=2; $total / $runs" | bc)
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Average startup time: ${avg}ms"
+
+          if [ $(echo "$avg > 200" | bc) -eq 1 ]; then
+            echo "⚠️  Warning: Startup time ${avg}ms exceeds 200ms threshold"
+            echo "This is informational, not failing the build (CI is slower than local)"
+          else
+            echo "✓ Startup time ${avg}ms is acceptable for CI environment"
+          fi
+
+      - name: Show installation logs on failure
+        if: failure()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Installation failed. Debugging info:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "XDG Directories:"
+          ls -la ~/.config ~/.local ~/.cache 2>/dev/null || echo "Dirs not created"
+          echo ""
+          echo "Stow symlinks in HOME:"
+          ls -la ~/ | grep '^l' || echo "No symlinks"
+          echo ""
+          echo "Antidote installation:"
+          ls -la ~/.local/share/antidote 2>/dev/null || echo "Not installed"
+          echo ""
+          echo "Plugin file:"
+          if [[ -f ~/.config/zsh/.zsh_plugins.zsh ]]; then
+            echo "Plugin file exists ($(wc -l < ~/.config/zsh/.zsh_plugins.zsh) lines)"
+            head -20 ~/.config/zsh/.zsh_plugins.zsh
+          else
+            echo "Plugin file not generated"
+          fi
+          echo ""
+          echo "ZSH configuration files:"
+          ls -la ~/.config/zsh/ 2>/dev/null || echo "ZSH config dir missing"

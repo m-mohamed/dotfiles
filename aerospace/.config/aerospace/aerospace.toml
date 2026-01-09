@@ -1,0 +1,265 @@
+# AeroSpace Configuration - Optimized for vim workflow
+# Based on community best practices for LazyVim + WezTerm + AeroSpace stack
+
+# ══════════════════════════════════════════════════════════════════════
+# Startup Commands
+# ══════════════════════════════════════════════════════════════════════
+
+# Note: after-login-command is deprecated in AeroSpace 0.19.0+
+# To optimize macOS for tiling, manually run these commands:
+# defaults write com.apple.spaces spans-displays -bool true
+# defaults write com.apple.dock expose-group-apps -bool true
+
+# Commands that run after AeroSpace startup
+after-startup-command = [
+    # Note: borders command relies on PATH set in exec.env-vars below
+    'exec-and-forget borders active_color=0xff7aa2f7 inactive_color=0xff565f89 width=6.0 style=round'
+]
+
+# Trigger Sketchybar updates when workspace changes
+exec-on-workspace-change = [
+    '/bin/bash', '-c',
+    'sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
+]
+
+# ══════════════════════════════════════════════════════════════════════
+# Core Settings
+# ══════════════════════════════════════════════════════════════════════
+
+# Start AeroSpace at login
+start-at-login = true
+
+# Normalization settings for cleaner tree structures
+# See: https://nikitabobko.github.io/AeroSpace/guide#normalization
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# ══════════════════════════════════════════════════════════════════════
+# Layout Configuration
+# ══════════════════════════════════════════════════════════════════════
+
+# Accordion padding (size when windows are stacked)
+accordion-padding = 30
+
+# Default layout: tiles (tiling) or accordion (stacked)
+default-root-container-layout = 'tiles'
+
+# Default orientation: auto adapts based on monitor aspect ratio
+# Wide monitors get horizontal, tall monitors get vertical
+default-root-container-orientation = 'auto'
+
+# Keyboard layout for key mapping
+key-mapping.preset = 'qwerty'
+
+# ══════════════════════════════════════════════════════════════════════
+# Mouse Behavior
+# ══════════════════════════════════════════════════════════════════════
+
+# Mouse follows focus when switching monitors
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+# Mouse follows focus when switching windows
+on-focus-changed = "move-mouse window-lazy-center"
+
+# ══════════════════════════════════════════════════════════════════════
+# Gaps Configuration (Dramatic floating aesthetic - windows hover above ground)
+# ══════════════════════════════════════════════════════════════════════
+
+[gaps]
+inner.horizontal = 10
+inner.vertical = 10
+outer.left = 10
+outer.bottom = 30    # Strong floating effect - symmetrical with sides!
+outer.top = 30       # Balanced top gap - plenty of room for bar
+outer.right = 10     # Maximum space
+
+# ══════════════════════════════════════════════════════════════════════
+# Exec Environment
+# ══════════════════════════════════════════════════════════════════════
+
+# Ensure Homebrew tools are available in exec commands
+[exec.env-vars]
+PATH = '/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:${PATH}'
+
+# ══════════════════════════════════════════════════════════════════════
+# Main Mode Bindings
+# ══════════════════════════════════════════════════════════════════════
+
+[mode.main.binding]
+
+# -- Layout Toggles (flatten + layout + balance for even sizing) --
+alt-slash = ['flatten-workspace-tree', 'layout tiles horizontal vertical', 'balance-sizes']
+alt-comma = ['flatten-workspace-tree', 'layout accordion horizontal vertical', 'balance-sizes']
+
+# -- Focus Navigation (vim hjkl) --
+# --ignore-floating skips floating windows (like Wispr Status)
+alt-h = 'focus --ignore-floating left'
+alt-j = 'focus --ignore-floating down'
+alt-k = 'focus --ignore-floating up'
+alt-l = 'focus --ignore-floating right'
+
+# -- Move Windows (vim hjkl + shift) --
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+# -- Window Operations --
+alt-shift-f = 'fullscreen'
+alt-shift-space = 'layout floating tiling'
+# Note: balance-sizes moved to service mode (alt-space then b)
+
+# -- Basic Resize --
+alt-shift-minus = 'resize smart -50'
+alt-shift-equal = 'resize smart +50'
+
+# -- Monitor Navigation --
+alt-p = 'focus-monitor prev'
+alt-n = 'focus-monitor next'
+alt-shift-p = 'move-node-to-monitor prev'
+alt-shift-n = 'move-node-to-monitor next'
+
+# -- Workspace Navigation (Mnemonic) --
+# B = Browser, T = Terminal, D = Development, M = Media, S = Slack, E = Email
+alt-b = 'workspace B'
+alt-t = 'workspace T'
+alt-d = 'workspace D'
+alt-m = 'workspace M'
+alt-s = 'workspace S'
+alt-e = 'workspace E'
+
+# -- Move Window to Workspace --
+alt-shift-b = 'move-node-to-workspace B'
+alt-shift-t = 'move-node-to-workspace T'
+# alt-shift-d conflicts with service mode join-down, so using ctrl-shift-d
+ctrl-shift-d = 'move-node-to-workspace D'
+alt-shift-m = 'move-node-to-workspace M'
+alt-shift-s = 'move-node-to-workspace S'
+# alt-shift-e conflicts with service mode, using ctrl-shift-e
+ctrl-shift-e = 'move-node-to-workspace E'
+
+# -- Workspace Traversal --
+alt-tab = 'workspace-back-and-forth'
+alt-u = 'workspace prev'
+alt-i = 'workspace next'
+
+# -- Monitor Workspace Management --
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+# -- Mode Switches --
+alt-space = 'mode service'
+alt-r = 'mode resize'
+alt-w = 'mode workspace'
+
+# ══════════════════════════════════════════════════════════════════════
+# Service Mode (Sticky Modal for Advanced Operations)
+# ══════════════════════════════════════════════════════════════════════
+
+[mode.service.binding]
+# Exit service mode
+esc = ['reload-config', 'mode main']
+space = 'mode main'
+enter = 'mode main'
+
+# -- Layout Operations --
+f = ['layout floating tiling', 'mode main']  # Toggle floating
+b = ['balance-sizes', 'mode main']
+backspace = ['close-all-windows-but-current', 'mode main']
+minus = ['flatten-workspace-tree', 'mode main']  # Reset layout
+
+# -- Join Operations (vim hjkl) --
+h = ['join-with left', 'mode main']
+j = ['join-with down', 'mode main']
+k = ['join-with up', 'mode main']
+l = ['join-with right', 'mode main']
+
+# -- Submodes --
+r = 'mode resize'
+w = 'mode workspace'
+
+# ══════════════════════════════════════════════════════════════════════
+# Resize Mode (Vim-style Window Resizing)
+# ══════════════════════════════════════════════════════════════════════
+
+[mode.resize.binding]
+# Exit resize mode
+esc = 'mode main'
+space = 'mode main'
+enter = 'mode main'
+
+# Coarse resizing (vim hjkl) - 50px increments
+h = 'resize width -50'
+j = 'resize height +50'
+k = 'resize height -50'
+l = 'resize width +50'
+
+# Fine resizing (shift + hjkl) - 10px increments
+shift-h = 'resize width -10'
+shift-j = 'resize height +10'
+shift-k = 'resize height -10'
+shift-l = 'resize width +10'
+
+# Balance all windows and exit
+b = ['balance-sizes', 'mode main']
+
+# ══════════════════════════════════════════════════════════════════════
+# Workspace Mode (Quick Workspace Navigation)
+# ══════════════════════════════════════════════════════════════════════
+
+[mode.workspace.binding]
+# Exit workspace mode
+esc = 'mode main'
+space = 'mode main'
+enter = 'mode main'
+
+# Navigate workspaces with vim hjkl
+h = ['workspace prev', 'mode main']
+l = ['workspace next', 'mode main']
+j = ['focus-monitor next', 'mode main']
+k = ['focus-monitor prev', 'mode main']
+
+# Direct workspace access (mnemonic)
+b = ['workspace B', 'mode main']
+t = ['workspace T', 'mode main']
+d = ['workspace D', 'mode main']
+m = ['workspace M', 'mode main']
+s = ['workspace S', 'mode main']
+e = ['workspace E', 'mode main']
+
+# Move window and follow (shift + letter)
+shift-b = ['move-node-to-workspace B', 'workspace B', 'mode main']
+shift-t = ['move-node-to-workspace T', 'workspace T', 'mode main']
+shift-d = ['move-node-to-workspace D', 'workspace D', 'mode main']
+shift-m = ['move-node-to-workspace M', 'workspace M', 'mode main']
+shift-s = ['move-node-to-workspace S', 'workspace S', 'mode main']
+shift-e = ['move-node-to-workspace E', 'workspace E', 'mode main']
+
+# ══════════════════════════════════════════════════════════════════════
+# Auto-Routing: Disabled (Manual control preferred)
+# ══════════════════════════════════════════════════════════════════════
+# Auto-routing has been disabled to allow full manual control over window placement.
+# You can move windows manually using Alt+Shift+B/T/D/M/S/E or via workspace mode.
+
+# ══════════════════════════════════════════════════════════════════════
+# App-Specific Rules
+# ══════════════════════════════════════════════════════════════════════
+
+# Wispr Flow - Float all windows to prevent keyboard capture issues
+[[on-window-detected]]
+if.app-name-regex-substring = 'Wispr'
+run = 'layout floating'
+
+# System Settings (macOS Ventura+) / System Preferences (older)
+[[on-window-detected]]
+if.app-name-regex-substring = 'System Settings|System Preferences'
+run = 'layout floating'
+
+# Activity Monitor
+[[on-window-detected]]
+if.app-id = 'com.apple.ActivityMonitor'
+run = 'layout floating'
+
+# Calculator
+[[on-window-detected]]
+if.app-id = 'com.apple.calculator'
+run = 'layout floating'
