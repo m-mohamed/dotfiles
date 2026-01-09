@@ -49,3 +49,9 @@ zsh/.config/zsh/local.zsh
 **/~/
 **/.Trash/
 **/Library/Preferences/
+
+# Profile repo (separate)
+m-mohamed/
+
+# Source images
+ghostintheshell_1.jpg
