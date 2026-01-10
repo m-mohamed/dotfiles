@@ -38,3 +38,4 @@ keybind = cmd+plus=increase_font_size:1
 keybind = cmd+minus=decrease_font_size:1
 keybind = cmd+zero=reset_font_size
 keybind = cmd+k=clear_screen
+keybind = cmd+shift+comma=reload_config

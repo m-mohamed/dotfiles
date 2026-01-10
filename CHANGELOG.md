@@ -8,7 +8,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Added
 - ZSH with Antidote, <100ms startup
 - Neovim (LazyVim) with Tokyo Night theme
-- WezTerm terminal with Unix domains
+- Ghostty terminal + Tmux session management
 - Aerospace tiling window manager
 - Sketchybar custom menu bar
 - Modern CLI tools (eza, bat, fd, rg, delta)

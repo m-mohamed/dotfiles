@@ -169,7 +169,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 
 # In CI environments, skip GUI packages that won't work headless
 if [[ "${CI:-false}" == "true" ]]; then
-  export HOMEBREW_BUNDLE_CASK_SKIP="wezterm aerospace karabiner-elements"
+  export HOMEBREW_BUNDLE_CASK_SKIP="ghostty aerospace karabiner-elements"
   export HOMEBREW_BUNDLE_BREW_SKIP="borders sketchybar"
   echo -e "${YELLOW}CI detected: Skipping GUI packages${NC}"
 fi
@@ -275,7 +275,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 
 packages=(
   aerospace borders claude claude-hooks dot-gitconfig dot-zprofile dot-zshenv
-  gh git karabiner nvim scripts sketchybar ssh starship tmux wezterm zsh
+  gh ghostty git karabiner nvim scripts sketchybar ssh starship tmux zsh
 )
 
 stow_package() {

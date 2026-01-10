@@ -29,8 +29,8 @@ case $1 in
 	;;
 
 # Terminals
-"WezTerm" | "wezterm-gui")
-	echo ""
+"Ghostty" | "ghostty")
+	echo "👻"
 	;;
 "iTerm2" | "iTerm")
 	echo ""

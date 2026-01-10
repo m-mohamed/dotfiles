@@ -10,7 +10,7 @@ bindkey -v
 export KEYTIMEOUT=1
 
 # ══════════════════════════════════════════════════════════════════════
-# Cursor Shape Management (WezTerm Compatible)
+# Cursor Shape Management (Ghostty/Tmux Compatible)
 # ══════════════════════════════════════════════════════════════════════
 
 # Change cursor shape based on vi mode

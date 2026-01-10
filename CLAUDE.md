@@ -59,7 +59,7 @@ Modules in `zsh/.config/zsh/modules/` load in numeric order:
 - `.zprofile` (login only): OrbStack init
 - `.zshrc` (interactive): Sources numbered modules
 
-**Critical**: Homebrew must be in `.zshenv` for WezTerm Unix domains (non-login shells).
+**Critical**: Homebrew must be in `.zshenv` for non-login shells (e.g., tmux, scripts).
 
 ### Performance Optimizations
 - **Static plugin loading**: Plugins regenerate only when `.zsh_plugins.txt` changes

@@ -32,7 +32,7 @@ echo ""
 echo -e "${BLUE}1. Unstowing all packages...${NC}"
 packages=(
   aerospace borders claude claude-hooks dot-gitconfig dot-zprofile dot-zshenv
-  gh git karabiner nvim scripts sketchybar ssh starship tmux wezterm zsh
+  gh ghostty git karabiner nvim scripts sketchybar ssh starship tmux zsh
 )
 
 for package in "${packages[@]}"; do
