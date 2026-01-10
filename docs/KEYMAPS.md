@@ -3,7 +3,7 @@
 **Last Updated:** 2025-11-17
 **Version:** LazyVim 2.0 + Snacks.nvim Suite
 
-Your complete guide to living in LazyVim, complemented by WezTerm and Aerospace.
+Your complete guide to living in LazyVim, complemented by Ghostty/Tmux and Aerospace.
 
 ---
 
@@ -14,7 +14,7 @@ Your complete guide to living in LazyVim, complemented by WezTerm and Aerospace.
 ```
 LazyVim:     Space Space / gd / K / Space ca / Shift+H/L / Ctrl+/
 Obsidian:    Space ot / Space oo / Space os
-WezTerm:     Ctrl+a → s/v/h/j/k/l/q/z
+Tmux:        Ctrl+a → s/v/h/j/k/l/q/z
 Aerospace:   Alt+h/j/k/l / Alt+b/t/d
 ```
 
@@ -22,7 +22,7 @@ Aerospace:   Alt+h/j/k/l / Alt+b/t/d
 
 ```
 LazyVim:    80% - File nav, code, git, terminal, AI, notes
-WezTerm:    15% - Long-running servers only
+Tmux:       15% - Long-running servers, session management
 Aerospace:   5% - Window management
 ```
 
@@ -667,7 +667,7 @@ Space gc            # Git commits (picker)
 
 ### Terminal
 
-Use Neovim's integrated Snacks terminal for quick commands. Reserve WezTerm for long-running servers only.
+Use Neovim's integrated Snacks terminal for quick commands. Tmux handles long-running servers and session persistence.
 
 #### Opening Terminals
 
@@ -751,7 +751,7 @@ Ctrl+/              # Hide terminal (toggle)
 q                   # Hide terminal (when in normal mode)
 ```
 
-#### Use Neovim Terminal vs WezTerm
+#### Use Neovim Terminal vs Tmux
 
 **Use Neovim Terminal (Ctrl+/):**
 
@@ -761,12 +761,13 @@ q                   # Hide terminal (when in normal mode)
 - Database queries (:DBUI)
 - Any command that completes quickly
 
-**Use WezTerm:**
+**Use Tmux (Ghostty launches into tmux):**
 
 - Long-running servers (npm run dev)
 - Docker containers
 - Log tailing
 - File watchers
+- SSH sessions that survive disconnection
 - Multiple independent background processes
 
 ---
@@ -1161,7 +1162,7 @@ Space am            # Select model (Sonnet/Opus/Haiku)
 
 #### Why Neovim Integration vs Separate Terminal?
 
-**Old flow (WezTerm tab):**
+**Old flow (separate terminal):**
 
 - Context switch between apps (Cmd+Tab)
 - Manual file management
@@ -1515,36 +1516,56 @@ Space .             # Repeat last command
 
 ---
 
-## 2. WezTerm Terminal Multiplexer
+## 2. Ghostty Terminal + Tmux
 
-WezTerm is for **long-running servers only**.
-Use Neovim terminal (Ctrl+/) for everything else.
+Ghostty is the fast, native display layer. Tmux handles session management and pane multiplexing.
+Use Neovim terminal (Ctrl+/) for quick commands.
 
-### WezTerm Leader Key
+### Ghostty (Display Layer)
 
-**`Ctrl+a`** (1 second timeout)
-
-### WezTerm Essential Keymaps
+**Minimal keybindings - tmux handles everything:**
 
 ```vim
-Ctrl+a → s          # Split pane vertically
-Ctrl+a → v          # Split pane horizontally
+Cmd+C/V             # Copy/paste
+Cmd+±               # Font size
+Cmd+K               # Clear screen
+```
+
+### Tmux (Session Manager)
+
+**`Ctrl+a`** - Prefix key (screen standard)
+
+### Tmux Essential Keymaps
+
+```vim
+Ctrl+a → s          # Split horizontal
+Ctrl+a → v          # Split vertical
 Ctrl+a → h/j/k/l    # Navigate panes (vim-style)
 Ctrl+a → q          # Close current pane
 Ctrl+a → z          # Zoom/maximize pane (toggle)
-Ctrl+a → t          # New tab
-Ctrl+a → [/]        # Previous/next tab
+Ctrl+a → t          # New window
+Ctrl+a → [/]        # Previous/next window
+Ctrl+a → w          # Session/window chooser
+Alt+1-9             # Direct window access
 ```
 
-### Other Useful Features
+### Modern Popups
 
 ```vim
-Ctrl+a → b          # Show tab navigator
-Ctrl+a → r          # Rename tab
-Ctrl+a → w          # Show workspaces
-Ctrl+a → Space      # QuickSelect (URLs, paths)
-Ctrl+ / Ctrl-       # Font size increase/decrease
-Ctrl+0              # Reset font size
+Ctrl+a Ctrl+w       # Session switcher (fzf popup)
+Ctrl+a Ctrl+t       # Scratch terminal
+Ctrl+a g            # Floating lazygit
+```
+
+### Shell Aliases
+
+```vim
+tb                  # tmux-boot (project launcher)
+ta <name>           # Attach to session
+tl                  # List sessions
+tn <name>           # New session
+tk <name>           # Kill session
+tmux-nuke           # Kill all sessions
 ```
 
 ### Rehoboam (Rust TUI)
@@ -1557,7 +1578,7 @@ Real-time observability TUI for Claude Code agents. Named after Westworld's AI t
 q / Esc             # Quit
 j / Down            # Select next agent
 k / Up              # Select previous agent
-Enter               # Jump to selected agent's WezTerm pane
+Enter               # Jump to selected agent's tmux pane
 d                   # Toggle debug mode (shows event log)
 ? / h               # Toggle help
 ```
@@ -1571,14 +1592,12 @@ d                   # Toggle debug mode (shows event log)
 **Socket:** `/tmp/rehoboam.sock`
 **Logs:** `~/.cache/rehoboam/logs/`
 
-**Install:** `cargo build --release && ./target/release/rehoboam --install`
+**Install:** `cargo install --git https://github.com/m-mohamed/rehoboam`
 
 ### Configuration
 
-- Font: JetBrainsMono Nerd Font, size 22
-- Color scheme: Tokyo Night
-- 10,000 line scrollback
-- Unix domain for session persistence
+- **Ghostty:** Tokyo Night, JetBrainsMono Nerd Font @ 22pt
+- **Tmux:** TPM plugins (resurrect, continuum, yank)
 
 ---
 
@@ -1628,7 +1647,7 @@ Alt+r → Esc         # Exit mode
 ### Workspace Layout
 
 - **B**: Browser
-- **T**: Terminal (WezTerm lives here)
+- **T**: Terminal (Ghostty/Tmux lives here)
 - **D**: Development (Neovim coding)
 - **M**: Media
 - **S**: Slack/Communication
@@ -1641,7 +1660,7 @@ Alt+r → Esc         # Exit mode
 ### Morning Startup
 
 ```vim
-# In WezTerm:
+# In Ghostty (launches tmux):
 cd ~/project
 nvim .
 
@@ -1782,7 +1801,7 @@ Space qS            # Choose from session list
 
 **Workflow Distribution:**
 
-- **WezTerm**: 5% (dev servers only)
+- **Tmux**: 5% (session management, dev servers)
 
 **Philosophy:**
 
@@ -1803,7 +1822,8 @@ Space qS            # Choose from session list
 ## Configuration Files
 
 - **Neovim**: `~/.config/nvim/`
-- **WezTerm**: `~/.config/wezterm/wezterm.lua`
+- **Ghostty**: `~/.config/ghostty/config`
+- **Tmux**: `~/.config/tmux/tmux.conf`
 - **Aerospace**: `~/.config/aerospace/aerospace.toml`
 - **Obsidian**: `~/obsidian/slipbox/`
 

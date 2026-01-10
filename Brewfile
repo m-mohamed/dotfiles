@@ -21,7 +21,7 @@ brew "stow"                      # Symlink management
 brew "zsh"                       # Shell (keep updated)
 brew "starship"                  # Cross-shell prompt
 brew "tmux"                      # Terminal multiplexer (mobile sessions via SSH)
-cask "wezterm"                   # GPU-accelerated terminal
+cask "ghostty"                   # Fast native terminal (display layer for tmux)
 
 # ══════════════════════════════════════════════════════════════════════
 # Window Management & Desktop
@@ -56,7 +56,7 @@ brew "tldr"                      # Simplified man pages
 brew "tree"                      # Directory tree view
 brew "jq"                        # JSON processor
 brew "wget"                      # Internet file retriever
-brew "gum"                       # Glamorous shell scripts (wez-boot UI)
+brew "gum"                       # Glamorous shell scripts (tmux-boot UI)
 
 # ══════════════════════════════════════════════════════════════════════
 # System Utilities

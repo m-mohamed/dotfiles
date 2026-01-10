@@ -42,50 +42,28 @@ alias ld='lazydocker'
 alias cc='claude'  # Claude Code CLI
 
 # ══════════════════════════════════════════════════════════════════════
-# Terminal (WezTerm)
+# Tmux (Primary Workflow)
 # ══════════════════════════════════════════════════════════════════════
-# Nuke WezTerm - graceful quit, kill mux server, clean all state
-wez-nuke() {
-  # If running inside WezTerm, use AppleScript to quit it gracefully
-  # This avoids killing our own shell with pkill
-  if [[ -n "$WEZTERM_PANE" ]]; then
-    echo "Quitting WezTerm via AppleScript..."
-    osascript -e 'quit app "WezTerm"'
-    sleep 1  # Give it a moment to quit gracefully
-  fi
+alias tb='tmux-boot'              # Project launcher (interactive)
+alias ta='tmux attach -t'         # Attach: ta avaza
+alias tl='tmux list-sessions'     # List sessions
+alias tn='tmux new -s'            # New: tn myproject
+alias tk='tmux kill-session -t'   # Kill: tk myproject
+alias ts='tmux switch -t'         # Switch (inside tmux): ts avaza
+alias td='tmux detach'            # Detach
 
-  # Kill any remaining processes (mux server persists after GUI closes)
-  echo "Stopping WezTerm mux server..."
-  pkill -9 -f "wezterm-mux-server" 2>/dev/null
-
-  echo "Stopping WezTerm GUI..."
-  pkill -9 -f "wezterm-gui" 2>/dev/null
-
-  # Clean up ALL state files (sockets, PID, symlinks, logs)
-  echo "Cleaning up WezTerm state..."
-  rm -rf ~/.local/share/wezterm/sock 2>/dev/null
-  rm -rf ~/.local/share/wezterm/gui-sock-* 2>/dev/null
-  rm -rf ~/.local/share/wezterm/pid 2>/dev/null
-  rm -rf ~/.local/share/wezterm/default-* 2>/dev/null
-  rm -rf ~/.local/share/wezterm/wezterm-gui-log-*.txt 2>/dev/null
-  rm -rf ~/.local/share/wezterm/wezterm-log-*.txt 2>/dev/null
-
-  echo "Done. WezTerm nuked. Open fresh when ready."
-}
-alias wez-reset='wez-nuke'
-
-# ══════════════════════════════════════════════════════════════════════
-# Mobile (tmux for Termius/SSH access)
-# ══════════════════════════════════════════════════════════════════════
-# Start or attach to mobile Claude Code session
+# Mobile shortcut (same as any session)
 alias mobile-claude='tmux new-session -A -s claude'
-alias mc='mobile-claude'  # Short alias
-alias ta='tmux attach -t'  # Attach to named session
-alias tl='tmux list-sessions'  # List sessions
-alias tn='tmux new -s'  # New named session: tn fantasy
-alias tk='tmux kill-session -t'  # Kill session: tk fantasy
-alias ts='tmux switch -t'  # Switch session (from inside tmux)
-alias td='tmux detach'  # Detach from session (or Ctrl+b d)
+alias mc='mobile-claude'
+
+# Tmux Nuclear Reset
+tmux-nuke() {
+  echo "Killing all tmux sessions..."
+  tmux kill-server 2>/dev/null || true
+  rm -f /tmp/rehoboam.sock
+  echo "Done. Tmux nuked."
+}
+alias tmux-reset='tmux-nuke'
 
 # ══════════════════════════════════════════════════════════════════════
 # Completion Definitions for Aliases

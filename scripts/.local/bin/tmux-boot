@@ -1,0 +1,155 @@
+#!/bin/bash
+# tmux-boot - Bootstrap Claude Code sessions with interactive selection
+#
+# Usage:
+#   tmux-boot           # Interactive multi-select
+#   tmux-boot --all     # Boot all projects
+#   tmux-boot --list    # List available projects
+#
+# Dependencies: jq, gum, tmux, zoxide (optional)
+#
+set -euo pipefail
+
+PROJECTS_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/claude-hooks/projects.json"
+
+# Styling (Tokyo Night theme)
+export GUM_CHOOSE_CURSOR_FOREGROUND="#7aa2f7"
+export GUM_CHOOSE_SELECTED_FOREGROUND="#9ece6a"
+export GUM_CHOOSE_HEADER_FOREGROUND="#bb9af7"
+
+# Check dependencies
+check_deps() {
+  local missing=()
+  command -v jq &>/dev/null || missing+=("jq")
+  command -v gum &>/dev/null || missing+=("gum")
+  command -v tmux &>/dev/null || missing+=("tmux")
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Missing dependencies: ${missing[*]}"
+    echo "Install with: brew install ${missing[*]}"
+    exit 1
+  fi
+
+  if [[ ! -f "$PROJECTS_JSON" ]]; then
+    echo "Projects config not found: $PROJECTS_JSON"
+    echo "Create it at: $PROJECTS_JSON"
+    echo 'Example: [{"name": "myproject", "path": "~/projects/myproject"}]'
+    exit 1
+  fi
+}
+
+# Get projects sorted by zoxide frecency (fallback to priority)
+get_sorted_projects() {
+  if command -v zoxide &>/dev/null; then
+    # Query zoxide for frecency scores, merge with projects.json
+    while IFS= read -r path; do
+      local expanded="${path/#\~/$HOME}"
+      local score
+      score=$(zoxide query --score "$expanded" 2>/dev/null | awk '{print $1}' || echo "0")
+      local name
+      name=$(jq -r ".[] | select(.path == \"$path\") | .name" "$PROJECTS_JSON")
+      echo "$score $name"
+    done < <(jq -r '.[].path' "$PROJECTS_JSON") | sort -rn | awk '{print $2}'
+  else
+    # Fallback to priority ordering
+    jq -r 'sort_by(.priority) | .[].name' "$PROJECTS_JSON"
+  fi
+}
+
+# List projects
+list_projects() {
+  echo "Available projects:"
+  jq -r '.[] | "  \(.name)\t\(.path)"' "$PROJECTS_JSON" | column -t -s $'\t'
+}
+
+# Boot a single project
+boot_project() {
+  local name="$1"
+  local project
+  project=$(jq -r ".[] | select(.name == \"$name\")" "$PROJECTS_JSON")
+
+  if [[ -z "$project" ]]; then
+    echo "Project not found: $name"
+    return 1
+  fi
+
+  local path
+  path=$(echo "$project" | jq -r '.path' | sed "s|~|$HOME|")
+
+  # Check if session already exists
+  if tmux has-session -t "$name" 2>/dev/null; then
+    echo "Session '$name' exists, switching..."
+    # If inside tmux, switch; otherwise attach
+    if [[ -n "${TMUX:-}" ]]; then
+      tmux switch-client -t "$name"
+    else
+      tmux attach -t "$name"
+    fi
+  else
+    echo "Creating session '$name' in $path..."
+    tmux new-session -d -s "$name" -c "$path"
+    tmux send-keys -t "$name" "claude" Enter
+    # If inside tmux, switch; otherwise attach
+    if [[ -n "${TMUX:-}" ]]; then
+      tmux switch-client -t "$name"
+    else
+      tmux attach -t "$name"
+    fi
+  fi
+}
+
+# Main
+main() {
+  check_deps
+
+  # Handle flags
+  case "${1:-}" in
+    --all)
+      echo "Booting all projects..."
+      while IFS= read -r name; do
+        boot_project "$name"
+        sleep 0.5  # Brief delay to let session initialize
+      done < <(get_sorted_projects)
+      echo ""
+      echo "Done! Use Ctrl+a w for session chooser"
+      ;;
+    --list)
+      list_projects
+      ;;
+    --help|-h)
+      echo "Usage: tmux-boot [--all|--list|--help]"
+      echo ""
+      echo "  (no args)  Interactive multi-select"
+      echo "  --all      Boot all projects"
+      echo "  --list     List available projects"
+      ;;
+    *)
+      # Interactive selection
+      local names
+      names=$(get_sorted_projects)
+
+      if [[ -z "$names" ]]; then
+        echo "No projects found in $PROJECTS_JSON"
+        exit 1
+      fi
+
+      local selected
+      selected=$(echo "$names" | gum choose --no-limit --header "Select projects (Tab=select, Enter=confirm):")
+
+      if [[ -z "$selected" ]]; then
+        echo "No projects selected"
+        exit 0
+      fi
+
+      while IFS= read -r name; do
+        boot_project "$name"
+        sleep 0.5
+      done <<< "$selected"
+
+      echo ""
+      echo "Done! Use Ctrl+a w for session chooser"
+      ;;
+  esac
+}
+
+main "$@"

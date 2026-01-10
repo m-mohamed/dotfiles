@@ -4,45 +4,73 @@ Quick reference for the key tools in this dotfiles setup. For detailed configura
 
 ---
 
-## WezTerm (Terminal)
+## Ghostty (Terminal)
 
-**Config:** `wezterm/.config/wezterm/wezterm.lua`
+**Config:** `ghostty/.config/ghostty/config`
+
+Fast, native terminal emulator. Used as display layer for tmux.
+
+### Key Settings
+
+- Launches tmux automatically on start
+- Tokyo Night theme (built-in)
+- JetBrainsMono Nerd Font @ 22pt
+
+### Keybindings (Minimal)
+
+| Key | Action |
+|-----|--------|
+| `Cmd+C/V` | Copy/paste |
+| `Cmd+±` | Font size |
+| `Cmd+K` | Clear screen |
+
+All navigation happens in tmux with `Ctrl+a` prefix. See Tmux section below.
+
+---
+
+## Tmux (Session Manager)
+
+**Config:** `tmux/.config/tmux/tmux.conf`
 
 ### Key Concepts
 
-- **Leader Key:** `Ctrl+a` (screen/tmux standard, 1000ms timeout)
-- **Unix Domains:** Persistent sessions that survive terminal crashes
-- **Theme:** Tokyo Night (consistent with all tools)
+- **Prefix:** `Ctrl+a` (screen standard)
+- **Persistent sessions:** Survive terminal crashes, accessible via SSH
+- **Plugins:** TPM, resurrect, continuum, yank
 
 ### Essential Keybindings
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+a` then `h/j/k/l` | Navigate panes (vim-style) |
-| `Ctrl+a` then `s` | Split vertical |
-| `Ctrl+a` then `v` | Split horizontal |
-| `Ctrl+a` then `z` | Toggle pane zoom |
-| `Ctrl+a` then `q` | Close pane |
-| `Ctrl+a` then `t` | New tab |
-| `Ctrl+a` then `[/]` | Previous/next tab |
-| `Ctrl+a` then `w` | Workspace selector |
-| `Ctrl+a` then `Space` | QuickSelect (URLs, paths, git SHAs) |
-| `Cmd+k` | Clear scrollback |
+| `Ctrl+a w` | Session/window chooser |
+| `Ctrl+a h/j/k/l` | Navigate panes (vim-style) |
+| `Ctrl+a s` | Split horizontal |
+| `Ctrl+a v` | Split vertical |
+| `Ctrl+a z` | Toggle pane zoom |
+| `Ctrl+a q` | Close pane |
+| `Ctrl+a t` | New window |
+| `Ctrl+a [/]` | Previous/next window |
+| `Ctrl+a d` | Detach |
+| `Alt+1-9` | Direct window access |
 
-### Session Management
+### Modern Popups
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+a` then `a` | Attach to unix domain |
-| `Ctrl+a` then `d` | Detach from session |
-| `Ctrl+a` then `Shift+X` | Nuclear reset (kill mux server) |
+| `Ctrl+a Ctrl+w` | Session switcher (fzf popup) |
+| `Ctrl+a Ctrl+t` | Scratch terminal |
+| `Ctrl+a g` | Floating lazygit |
 
-### Troubleshooting
+### Shell Aliases
 
-Reset WezTerm if sessions get stuck:
-```bash
-wez-reset  # Alias defined in 03-aliases.zsh
-```
+| Alias | Command |
+|-------|---------|
+| `tb` | `tmux-boot` (project launcher) |
+| `ta <name>` | Attach to session |
+| `tl` | List sessions |
+| `tn <name>` | New session |
+| `tk <name>` | Kill session |
+| `tmux-nuke` | Kill all sessions |
 
 ---
 

@@ -1,0 +1,40 @@
+# Ghostty - Minimal config for tmux workflow
+# Config location: ~/.config/ghostty/config
+
+# ─── Shell ────────────────────────────────────────────────────────────
+# Launch tmux by default (attach to main or create)
+command = /opt/homebrew/bin/tmux new-session -A -s main
+
+# ─── Font ─────────────────────────────────────────────────────────────
+font-family = JetBrainsMono Nerd Font
+font-size = 22
+
+# ─── Theme ────────────────────────────────────────────────────────────
+theme = TokyoNight Night
+
+# ─── Window ───────────────────────────────────────────────────────────
+window-decoration = false
+window-padding-x = 0
+window-padding-y = 0
+macos-titlebar-style = hidden
+
+# ─── Cursor ───────────────────────────────────────────────────────────
+cursor-style = block
+cursor-style-blink = false
+
+# ─── macOS ────────────────────────────────────────────────────────────
+macos-option-as-alt = true
+
+# ─── Clipboard ────────────────────────────────────────────────────────
+clipboard-read = allow
+clipboard-write = allow
+copy-on-select = clipboard
+
+# ─── Keybindings ──────────────────────────────────────────────────────
+# Minimal - tmux handles everything via Ctrl+a
+keybind = cmd+c=copy_to_clipboard
+keybind = cmd+v=paste_from_clipboard
+keybind = cmd+plus=increase_font_size:1
+keybind = cmd+minus=decrease_font_size:1
+keybind = cmd+zero=reset_font_size
+keybind = cmd+k=clear_screen
