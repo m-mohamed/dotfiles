@@ -55,3 +55,6 @@ m-mohamed/
 
 # Source images
 ghostintheshell_1.jpg
+
+# Local workflow docs (iterate before committing)
+docs/WORKFLOW.md

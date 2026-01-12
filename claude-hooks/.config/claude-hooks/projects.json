@@ -4,5 +4,6 @@
   {"path": "~/startups/avaza-vri", "name": "avaza-vri", "priority": 3},
   {"path": "~/startups/ring-chase/fantasy-basketball-agent", "name": "fantasy", "priority": 4},
   {"path": "~/obsidian/slipbox", "name": "slipbox", "priority": 5},
-  {"path": "~/startups/rehoboam", "name": "rehoboam", "priority": 6}
+  {"path": "~/startups/rehoboam", "name": "rehoboam", "priority": 6},
+  {"path": "~/startups/sprites-rs", "name": "sprites-rs", "priority": 7}
 ]
