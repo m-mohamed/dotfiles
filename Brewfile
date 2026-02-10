@@ -100,7 +100,6 @@ cask "discord"                   # Communication platform
 cask "zoom"                      # Video conferencing
 cask "keycastr"                  # Keystroke visualizer for screencasts
 cask "ngrok"                     # Secure tunnels to localhost
-cask "termius"                   # SSH client (pairs with Tailscale for mobile access)
 
 # ══════════════════════════════════════════════════════════════════════
 # Fonts
