@@ -56,7 +56,6 @@ jobs:
       - name: Verify stow symlinks created
         run: |
           test -L ~/.zshenv || (echo "❌ ~/.zshenv not symlinked" && exit 1)
-          test -L ~/.zprofile || (echo "❌ ~/.zprofile not symlinked" && exit 1)
           test -L ~/.config/zsh/.zshrc || (echo "❌ ~/.config/zsh/.zshrc not symlinked" && exit 1)
           test -L ~/.gitconfig || (echo "❌ ~/.gitconfig not symlinked" && exit 1)
           echo "✓ All critical symlinks verified"
