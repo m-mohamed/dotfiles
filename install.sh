@@ -274,7 +274,7 @@ echo -e "${CYAN}  Step 5: Stowing Dotfiles${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 packages=(
-  aerospace borders claude claude-hooks dot-gitconfig dot-zprofile dot-zshenv
+  aerospace borders claude claude-hooks dot-gitconfig dot-zshenv
   gh ghostty git karabiner nvim scripts sketchybar ssh starship tmux zsh
 )
 

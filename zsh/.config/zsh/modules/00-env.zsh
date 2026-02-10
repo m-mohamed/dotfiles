@@ -56,16 +56,10 @@ export EDITOR=nvim
 export VISUAL=nvim
 
 # ══════════════════════════════════════════════════════════════════════
-# Tool-Specific Environment Variables
+# Rust Build Configuration
 # ══════════════════════════════════════════════════════════════════════
-# vapi
-export VAPI_INSTALL="$HOME/.vapi"
+export RUSTC_WRAPPER=sccache
 
-# ══════════════════════════════════════════════════════════════════════
-# API Keys (sourced from separate secrets file)
-# ══════════════════════════════════════════════════════════════════════
-# Load API keys from secrets file if it exists
+# Note: API keys are loaded automatically via the module glob in dot-zshrc
+# (00-env-secrets.zsh is sourced by the 0[0-9]-*.zsh pattern)
 # Copy 00-env-secrets.zsh.example to 00-env-secrets.zsh and add your keys
-if [[ -f "${ZDOTDIR:-$HOME/.config/zsh}/modules/00-env-secrets.zsh" ]]; then
-  source "${ZDOTDIR:-$HOME/.config/zsh}/modules/00-env-secrets.zsh"
-fi

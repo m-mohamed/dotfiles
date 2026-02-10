@@ -19,7 +19,7 @@ CURRENT_RX=$(netstat -ibn | awk -v interface="$INTERFACE" '$1 == interface {prin
 CURRENT_TX=$(netstat -ibn | awk -v interface="$INTERFACE" '$1 == interface {print $10; exit}')
 
 # Read previous values
-CACHE_DIR="/tmp/sketchybar_network_$$"
+CACHE_DIR="/tmp/sketchybar_network"
 mkdir -p "$CACHE_DIR"
 PREV_FILE="$CACHE_DIR/prev"
 

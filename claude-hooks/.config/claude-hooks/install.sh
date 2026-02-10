@@ -10,6 +10,9 @@
 #
 set -euo pipefail
 
+# Require jq for JSON merging
+command -v jq &>/dev/null || { echo "Error: jq is required but not installed. Run: brew install jq"; exit 1; }
+
 # Get the directory where this script lives
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECTS_JSON="$SCRIPT_DIR/projects.json"
@@ -45,16 +48,18 @@ install_hooks() {
   # Create .claude directory if it doesn't exist
   mkdir -p "$expanded/.claude"
 
-  # Check if settings.json already exists
+  # Merge template into existing settings.json (or copy if none exists)
   local target="$expanded/.claude/settings.json"
   if [[ -f "$target" ]]; then
     cp "$target" "$target.bak"
     echo "    Backed up settings.json"
+    # Merge: template values win for hook-related keys, existing values preserved for everything else
+    jq -s '.[0] * .[1]' "$target" "$TEMPLATE" > "$target.tmp" && mv "$target.tmp" "$target"
+    echo "    Merged hooks into existing settings"
+  else
+    cp "$TEMPLATE" "$target"
+    echo "    Installed hooks"
   fi
-
-  # Copy template
-  cp "$TEMPLATE" "$target"
-  echo "    Installed hooks"
 }
 
 # Append CLAUDE.md snippet (idempotent)

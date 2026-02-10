@@ -68,6 +68,22 @@ else
 fi
 
 # ══════════════════════════════════════════════════════════════════════
+# Completion System (after plugins set fpath for zsh-completions)
+# ══════════════════════════════════════════════════════════════════════
+autoload -Uz compinit
+
+# Cache completions for better performance (XDG compliant)
+# Only regenerate once per day or if missing
+compfile="$XDG_CACHE_HOME/zsh/.zcompdump"
+
+# Regenerate if file doesn't exist OR is older than 24 hours
+if [[ ! -f "$compfile" || -n ${compfile}(#qN.mh+24) ]]; then
+  compinit -d "$compfile"
+else
+  compinit -C -d "$compfile"  # -C skips security check (faster)
+fi
+
+# ══════════════════════════════════════════════════════════════════════
 # Plugin Configurations (Applied After Loading)
 # ══════════════════════════════════════════════════════════════════════
 

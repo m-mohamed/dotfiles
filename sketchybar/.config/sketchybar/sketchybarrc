@@ -113,6 +113,11 @@ sketchybar --add item clock right \
                  icon=$ICON_CLOCK \
                  script="$PLUGIN_DIR/clock.sh"
 
+# System monitoring widgets
+source "$ITEM_DIR/cpu.sh"
+source "$ITEM_DIR/memory.sh"
+source "$ITEM_DIR/network.sh"
+
 # ══════════════════════════════════════════════════════════════════════
 # Finalize
 # ══════════════════════════════════════════════════════════════════════

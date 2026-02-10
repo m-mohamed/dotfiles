@@ -29,24 +29,11 @@ setopt INTERACTIVE_COMMENTS      # Allow comments in interactive shell
 unsetopt BEEP                    # Disable system beep (prevents screen flashing)
 
 # ══════════════════════════════════════════════════════════════════════
-# Completion System
+# Completion Styles (compinit runs in 06-plugins.zsh after fpath is set)
 # ══════════════════════════════════════════════════════════════════════
-autoload -Uz compinit
-
-# Cache completions for better performance (XDG compliant)
-# Only regenerate once per day or if missing
-compfile="$XDG_CACHE_HOME/zsh/.zcompdump"
-
-# Regenerate if file doesn't exist OR is older than 24 hours
-if [[ ! -f "$compfile" || -n ${compfile}(#qN.mh+24) ]]; then
-  compinit -d "$compfile"
-else
-  compinit -C -d "$compfile"  # -C skips security check (faster)
-fi
 
 # Modern completion styles
 zstyle ':completion:*' menu select                          # Visual menu
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'   # Case insensitive
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"     # Colored completion
 zstyle ':completion:*' special-dirs true                    # Complete . and ..
 zstyle ':completion:*' use-cache on                         # Enable caching

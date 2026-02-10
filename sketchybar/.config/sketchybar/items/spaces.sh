@@ -8,9 +8,6 @@ source "$HOME/.config/sketchybar/icons.sh"
 
 PLUGIN_DIR="$HOME/.config/sketchybar/plugins"
 
-# Register aerospace workspace change event
-sketchybar --add event aerospace_workspace_change
-
 # Dynamically create workspace items from aerospace
 for sid in $(/opt/homebrew/bin/aerospace list-workspaces --all 2>/dev/null); do
 	SID_LOWER=$(echo "$sid" | tr '[:upper:]' '[:lower:]')

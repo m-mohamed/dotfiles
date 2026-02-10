@@ -53,7 +53,6 @@ brew "hyperfine"                 # CLI benchmarking tool
 brew "btop"                      # Process monitor (htop replacement)
 brew "direnv"                    # Load/unload env vars by directory
 brew "tldr"                      # Simplified man pages
-brew "tree"                      # Directory tree view
 brew "jq"                        # JSON processor
 brew "wget"                      # Internet file retriever
 brew "gum"                       # Glamorous shell scripts (tmux-boot UI)
@@ -85,6 +84,8 @@ brew "lazydocker"                # Terminal UI for docker
 brew "uv"                        # Python package installer and resolver
 brew "ruff"                      # Fast Python linter/formatter
 brew "oven-sh/bun/bun"           # Fast JavaScript runtime
+brew "fnm"                       # Fast Node Manager (Rust-based nvm alternative)
+brew "pnpm"                      # Fast, disk-efficient package manager
 brew "biome"                     # Fast TypeScript/JavaScript linter and formatter
 brew "supabase/tap/supabase"     # Supabase CLI for local development
 brew "stripe/stripe-cli/stripe"  # Stripe CLI for API testing
@@ -109,3 +110,15 @@ cask "font-jetbrains-mono-nerd-font"  # Programming font with icons
 cask "font-hack-nerd-font"            # Hack Nerd Font
 cask "font-symbols-only-nerd-font"    # Nerd Font symbols only
 cask "sf-symbols"                     # Apple SF Symbols (for SketchyBar)
+
+# ══════════════════════════════════════════════════════════════════════
+# Node.js Global CLIs (via pnpm)
+# ══════════════════════════════════════════════════════════════════════
+# These tools are npm packages, not available via Homebrew.
+# Install with: pnpm add -g <package>
+# pnpm globals persist across fnm/nvm Node version switches.
+#
+# pnpm add -g vercel          # Vercel deployment CLI
+# pnpm add -g convex          # Convex backend CLI
+# pnpm add -g trigger.dev     # Trigger.dev background jobs CLI
+# pnpm add -g wrangler        # Cloudflare Workers CLI (if needed)

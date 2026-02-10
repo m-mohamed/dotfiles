@@ -73,7 +73,7 @@ elif (( $(echo "$avg < 200" | bc -l) )); then
   echo ""
   echo "Tips to improve:"
   echo "  • Check for new plugins in .zsh_plugins.txt"
-  echo "  • Run: zsh -i -c 'zmodload zsh/zprof && zprof' to profile"
+  echo "  • Add 'zmodload zsh/zprof' to top of ~/.config/zsh/.zshrc, then run 'zsh -i -c zprof'"
   echo "  • Ensure completion cache exists: ls ~/.cache/zsh/.zcompdump"
   echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   exit 0
@@ -81,7 +81,7 @@ else
   echo -e "Status: ${RED}✗ SLOW${NC} (investigate with zprof)"
   echo ""
   echo "Diagnostic commands:"
-  echo "  • Profile startup: zsh -i -c 'zmodload zsh/zprof && source ~/.config/zsh/.zshrc && zprof'"
+  echo "  • Profile startup: Add 'zmodload zsh/zprof' to top of ~/.config/zsh/.zshrc, then run 'zsh -i -c zprof'"
   echo "  • Clear completions: rm ~/.cache/zsh/.zcompdump* && exec zsh"
   echo "  • Force plugin rebuild: rm ~/.config/zsh/.zsh_plugins.zsh && exec zsh"
   echo "  • Check for slow modules: time each module individually"

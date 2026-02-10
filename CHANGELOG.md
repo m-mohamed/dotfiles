@@ -15,4 +15,6 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Claude Code hooks for rehoboam
 - Comprehensive documentation
 
+Note: Pre-1.0 changelog entries were not tracked. See git tags for earlier release history.
+
 [1.0.0]: https://github.com/m-mohamed/dotfiles/releases/tag/v1.0.0

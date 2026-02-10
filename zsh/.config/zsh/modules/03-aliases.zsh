@@ -32,7 +32,7 @@ alias gits="git status"
 alias gitd="git diff"
 alias gitl="git lg"
 alias gita="git add ."
-alias gitc="cz commit"
+alias gitc="git commit"
 
 # Git shortcuts (g prefix)
 alias g='git'
@@ -60,7 +60,7 @@ alias gcp='git cherry-pick'
 # ══════════════════════════════════════════════════════════════════════
 alias lg='lazygit'
 alias ld='lazydocker'
-alias cc='claude'  # Claude Code CLI
+alias cl='claude'  # Claude Code CLI
 
 # ══════════════════════════════════════════════════════════════════════
 # Rehoboam (Claude Code Monitoring)

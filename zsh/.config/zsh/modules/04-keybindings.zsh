@@ -6,8 +6,8 @@
 # ══════════════════════════════════════════════════════════════════════
 bindkey -v
 
-# Reduce ESC delay to 10ms for instant mode switching
-export KEYTIMEOUT=1
+# Reduce ESC delay to 150ms (fast ESC, reliable jk binding)
+export KEYTIMEOUT=15
 
 # ══════════════════════════════════════════════════════════════════════
 # Cursor Shape Management (Ghostty/Tmux Compatible)

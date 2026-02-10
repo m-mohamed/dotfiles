@@ -25,8 +25,11 @@ else
   done
 fi
 
-# uv Python tooling
-export PATH="$PATH:$HOME/.local/bin"
+# uv Python tooling and Claude Code CLI
+export PATH="$HOME/.local/bin:$PATH"
+
+# Rust/Cargo
+export PATH="$PATH:$HOME/.cargo/bin"
 
 # Note: Bun is used as the JavaScript runtime (installed via Homebrew).
 # Python tools are managed by uv (installed via Homebrew).

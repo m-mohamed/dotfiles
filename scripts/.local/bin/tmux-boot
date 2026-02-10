@@ -2,32 +2,67 @@
 # tmux-boot - Bootstrap Claude Code sessions with Git repo auto-discovery
 #
 # Usage:
-#   tmux-boot           # Interactive fuzzy picker
-#   tmux-boot --all     # Boot all discovered repos
-#   tmux-boot --list    # List discovered repos
+#   tmux-boot              # Interactive fuzzy picker with preview
+#   tmux-boot --all        # Boot all discovered repos
+#   tmux-boot --list       # List discovered repos
+#   tmux-boot --last       # Switch to previous session
+#   tmux-boot --cmd nvim   # Use custom startup command (default: claude)
+#   tmux-boot --no-exclude # Don't exclude node_modules, vendor, etc.
+#   tmux-boot --config     # Show config file location
 #
-# Dependencies: fd, gum, tmux, zoxide (optional, for frecency sorting)
+# Dependencies: fd, fzf, tmux, zoxide (optional, for frecency sorting)
 #
 set -euo pipefail
 
-# Directories to scan for Git repos (customize as needed)
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEFAULT CONFIGURATION (can be overridden via config file)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Directories to scan for Git repos
 SEARCH_DIRS=(~/startups ~/projects ~/code ~/work ~/dotfiles)
 
-# Styling (Tokyo Night theme)
-export GUM_FILTER_INDICATOR_FOREGROUND="#7aa2f7"
-export GUM_FILTER_MATCH_FOREGROUND="#9ece6a"
-export GUM_FILTER_HEADER_FOREGROUND="#bb9af7"
-export GUM_FILTER_PROMPT_FOREGROUND="#bb9af7"
-export GUM_FILTER_CURSOR_TEXT_FOREGROUND="#7aa2f7"
-export GUM_CHOOSE_CURSOR_FOREGROUND="#7aa2f7"
-export GUM_CHOOSE_SELECTED_FOREGROUND="#9ece6a"
-export GUM_CHOOSE_HEADER_FOREGROUND="#bb9af7"
+# Patterns to exclude from discovery
+EXCLUDE_PATTERNS=(node_modules vendor .cargo target build dist .next)
 
-# Check dependencies
+# Startup command (can be overridden with --cmd)
+STARTUP_CMD="claude"
+
+# Whether to apply exclude patterns
+USE_EXCLUDES=true
+
+# Config file location (XDG-compliant)
+CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/tmux-boot/config"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOAD CONFIG
+# ═══════════════════════════════════════════════════════════════════════════════
+
+load_config() {
+  if [[ -f "$CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE"
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STYLING (Tokyo Night theme for fzf)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+export FZF_DEFAULT_OPTS="
+  --color=bg+:#292e42,bg:#1a1b26,spinner:#bb9af7,hl:#7aa2f7
+  --color=fg:#c0caf5,header:#bb9af7,info:#7aa2f7,pointer:#bb9af7
+  --color=marker:#9ece6a,fg+:#c0caf5,prompt:#bb9af7,hl+:#7aa2f7
+  --color=border:#7aa2f7
+"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEPENDENCY CHECK
+# ═══════════════════════════════════════════════════════════════════════════════
+
 check_deps() {
   local missing=()
   command -v fd &>/dev/null || missing+=("fd")
-  command -v gum &>/dev/null || missing+=("gum")
+  command -v fzf &>/dev/null || missing+=("fzf")
   command -v tmux &>/dev/null || missing+=("tmux")
 
   if [[ ${#missing[@]} -gt 0 ]]; then
@@ -36,6 +71,10 @@ check_deps() {
     exit 1
   fi
 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CORE FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
 
 # Discover Git repositories in configured directories
 # Max depth of 4 covers: ~/projects/category/project/.git
@@ -48,25 +87,62 @@ discover_repos() {
 
   [[ ${#dirs[@]} -eq 0 ]] && return
 
-  fd -t d "^\.git$" "${dirs[@]}" --hidden --max-depth 4 2>/dev/null | while read -r git_dir; do
+  # Build exclude arguments
+  local exclude_args=()
+  if [[ "$USE_EXCLUDES" == "true" ]]; then
+    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+      exclude_args+=(--exclude "$pattern")
+    done
+  fi
+
+  # Use fd with or without exclude args
+  if [[ ${#exclude_args[@]} -gt 0 ]]; then
+    fd -t d "^\.git$" "${dirs[@]}" --hidden --max-depth 4 "${exclude_args[@]}" 2>/dev/null
+  else
+    fd -t d "^\.git$" "${dirs[@]}" --hidden --max-depth 4 2>/dev/null
+  fi | while read -r git_dir; do
     dirname "$git_dir"
   done | sort -u
 }
 
-# Get projects sorted by zoxide frecency (fallback to alphabetical)
+# Get currently running tmux sessions
 # Output format: name|path
+get_running_sessions() {
+  tmux list-sessions -F '#{session_name}|#{session_path}' 2>/dev/null || true
+}
+
+# Get projects sorted by zoxide frecency (fallback to alphabetical)
+# Running sessions appear at top with [*] prefix
+# Output format: name|path (name has [*] prefix if running)
 get_sorted_projects() {
   local repos
   repos=$(discover_repos)
+  local running
+  running=$(get_running_sessions)
 
+  # If no repos and no running sessions, nothing to show
+  [[ -z "$repos" && -z "$running" ]] && return
+
+  # Output running sessions first (with [*] prefix)
+  if [[ -n "$running" ]]; then
+    while IFS='|' read -r name path; do
+      echo "[*] $name|$path"
+    done <<< "$running"
+  fi
+
+  # Skip if no repos discovered
   [[ -z "$repos" ]] && return
 
   if command -v zoxide &>/dev/null; then
     # Get zoxide scores and join with discovered repos in one awk pass
     # Input: zoxide scores first (marked with Z:), then repos (marked with R:)
+    # Also pass running session names to skip (marked with S:)
     {
       zoxide query --list --score 2>/dev/null | sed 's/^/Z:/' || true
       echo "$repos" | sed 's/^/R:/'
+      if [[ -n "$running" ]]; then
+        echo "$running" | cut -d'|' -f1 | sed 's/^/S:/'
+      fi
     } | awk '
     BEGIN { FS=" " }
     /^Z:/ {
@@ -84,22 +160,43 @@ get_sorted_projects() {
       path = $0
       repos[path] = 1
     }
+    /^S:/ {
+      # Parse running session name: "S:name"
+      sub(/^S:/, "")
+      running[$0] = 1
+    }
     END {
       for (path in repos) {
-        score = (path in scores) ? scores[path] : 0
         n = split(path, parts, "/")
         name = parts[n]
+        # Skip if already running (shown above)
+        if (name in running) continue
+        score = (path in scores) ? scores[path] : 0
         print score "|" name "|" path
       }
     }' | sort -t'|' -k1 -rn | cut -d'|' -f2-
   else
-    echo "$repos" | awk -F/ '{print $NF "|" $0}' | sort
+    # No zoxide: alphabetical, but skip running sessions
+    # Use grep to check if name is in running sessions
+    local running_names=""
+    if [[ -n "$running" ]]; then
+      running_names=$(echo "$running" | cut -d'|' -f1)
+    fi
+    echo "$repos" | while read -r path; do
+      local name
+      name=$(basename "$path")
+      # Skip if already running
+      if [[ -n "$running_names" ]] && echo "$running_names" | grep -qx "$name"; then
+        continue
+      fi
+      echo "$name|$path"
+    done | sort
   fi
 }
 
 # List projects
 list_projects() {
-  echo "Discovered Git repositories:"
+  echo "Projects (running sessions marked with [*]):"
   echo ""
   local projects
   projects=$(get_sorted_projects)
@@ -113,14 +210,18 @@ list_projects() {
   fi
 
   while IFS='|' read -r name path; do
-    printf "  %-20s %s\n" "$name" "$path"
+    printf "  %-24s %s\n" "$name" "$path"
   done <<< "$projects"
 }
 
 # Boot a single project by name|path format
+# Handles [*] prefix for running sessions
 boot_project() {
   local name="$1"
   local path="$2"
+
+  # Strip [*] prefix from running sessions
+  name="${name#\[\*\] }"
 
   # Check if session already exists
   if tmux has-session -t "$name" 2>/dev/null; then
@@ -134,7 +235,10 @@ boot_project() {
   else
     echo "Creating session '$name' in $path..."
     tmux new-session -d -s "$name" -c "$path"
-    tmux send-keys -t "$name" "claude" Enter
+    # Only send startup command if one is configured
+    if [[ -n "$STARTUP_CMD" ]]; then
+      tmux send-keys -t "$name" "$STARTUP_CMD" Enter
+    fi
     # If inside tmux, switch; otherwise attach
     if [[ -n "${TMUX:-}" ]]; then
       tmux switch-client -t "$name"
@@ -145,6 +249,7 @@ boot_project() {
 }
 
 # Lookup path for a given project name from the projects list
+# Handles [*] prefix for running sessions
 lookup_path() {
   local target_name="$1"
   local projects="$2"
@@ -158,12 +263,196 @@ lookup_path() {
   return 1
 }
 
-# Main
+# ═══════════════════════════════════════════════════════════════════════════════
+# FZF PREVIEW FUNCTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Generate preview content for fzf
+# Called internally via --preview flag
+preview_session() {
+  local name="$1"
+  local is_running=false
+  local session_name="$name"
+
+  # Check if this is a running session (has [*] prefix)
+  if [[ "$name" == "[*] "* ]]; then
+    is_running=true
+    session_name="${name#\[\*\] }"
+  fi
+
+  # Find the path for this session/repo
+  local path=""
+  local projects
+  projects=$(get_sorted_projects)
+
+  while IFS='|' read -r pname ppath; do
+    if [[ "$pname" == "$name" ]]; then
+      path="$ppath"
+      break
+    fi
+  done <<< "$projects"
+
+  # Fallback: try to get path from tmux for running sessions
+  if [[ -z "$path" && "$is_running" == "true" ]]; then
+    path=$(tmux display-message -t "$session_name" -p '#{session_path}' 2>/dev/null || true)
+  fi
+
+  if [[ "$is_running" == "true" ]]; then
+    # Running session: show header + pane contents
+    local windows panes
+    windows=$(tmux list-windows -t "$session_name" 2>/dev/null | wc -l | tr -d ' ')
+    panes=$(tmux list-panes -t "$session_name" -a 2>/dev/null | wc -l | tr -d ' ')
+
+    echo "━━━ $session_name [RUNNING] ━━━"
+    [[ -n "$path" ]] && echo "Path: $path"
+    echo "Windows: $windows │ Panes: $panes"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    # Capture last 20 lines from the first pane
+    tmux capture-pane -t "$session_name:1.1" -p -S -20 2>/dev/null || \
+      tmux capture-pane -t "$session_name" -p -S -20 2>/dev/null || \
+      echo "(Unable to capture pane contents)"
+  else
+    # Not running: show header + directory tree
+    echo "━━━ $session_name ━━━"
+    [[ -n "$path" ]] && echo "Path: $path"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    if [[ -n "$path" && -d "$path" ]]; then
+      if command -v eza &>/dev/null; then
+        eza --tree --level=2 --icons --git-ignore "$path" 2>/dev/null || \
+          eza --tree --level=2 "$path" 2>/dev/null || \
+          ls -la "$path" 2>/dev/null
+      else
+        ls -la "$path" 2>/dev/null || echo "(Unable to list directory)"
+      fi
+    else
+      echo "(Path not found)"
+    fi
+  fi
+}
+
+# Output project list for fzf (used for reload after delete)
+fzf_list() {
+  get_sorted_projects | cut -d'|' -f1
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LAST SESSION SWITCHER
+# ═══════════════════════════════════════════════════════════════════════════════
+
+switch_last() {
+  if [[ -z "${TMUX:-}" ]]; then
+    echo "Error: Not inside a tmux session"
+    echo "Use 'tmux attach' to connect to an existing session first"
+    exit 1
+  fi
+
+  if ! tmux switch-client -l 2>/dev/null; then
+    echo "Error: No previous session to switch to"
+    exit 1
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ARGUMENT PARSING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --cmd)
+        STARTUP_CMD="${2:-}"
+        shift 2
+        ;;
+      --no-exclude)
+        USE_EXCLUDES=false
+        shift
+        ;;
+      --all|--list|--last|--config|--help|-h)
+        ACTION="$1"
+        shift
+        ;;
+      --preview)
+        # Internal: used by fzf to generate preview
+        ACTION="--preview"
+        PREVIEW_TARGET="${2:-}"
+        shift 2
+        ;;
+      --fzf-list)
+        # Internal: used by fzf reload after delete
+        ACTION="--fzf-list"
+        shift
+        ;;
+      *)
+        echo "Unknown option: $1"
+        echo "Use --help for usage information"
+        exit 1
+        ;;
+    esac
+  done
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+
 main() {
+  # Load config first (before check_deps so config can affect behavior)
+  load_config
+
+  # Parse arguments
+  local ACTION=""
+  local PREVIEW_TARGET=""
+  parse_args "$@"
+
+  # Internal commands don't need full dep check
+  case "$ACTION" in
+    --preview)
+      preview_session "$PREVIEW_TARGET"
+      exit 0
+      ;;
+    --fzf-list)
+      fzf_list
+      exit 0
+      ;;
+    --config)
+      echo "Config file: $CONFIG_FILE"
+      if [[ -f "$CONFIG_FILE" ]]; then
+        echo "Status: exists"
+        echo ""
+        echo "Contents:"
+        cat "$CONFIG_FILE"
+      else
+        echo "Status: not found (using defaults)"
+        echo ""
+        echo "Create with:"
+        echo "  mkdir -p \"$(dirname "$CONFIG_FILE")\""
+        echo "  cat > \"$CONFIG_FILE\" << 'EOF'"
+        echo "# tmux-boot configuration"
+        echo ""
+        echo "# Search directories (space-separated or array)"
+        echo "SEARCH_DIRS=(~/startups ~/projects ~/code ~/work ~/dotfiles)"
+        echo ""
+        echo "# Exclude patterns"
+        echo "EXCLUDE_PATTERNS=(node_modules vendor .cargo target build dist .next)"
+        echo ""
+        echo "# Default startup command"
+        echo "STARTUP_CMD=\"claude\""
+        echo "EOF"
+      fi
+      exit 0
+      ;;
+  esac
+
+  # Full commands need dependency check
   check_deps
 
   # Handle flags
-  case "${1:-}" in
+  case "$ACTION" in
+    --last)
+      switch_last
+      ;;
     --all)
       echo "Booting all discovered repos..."
       local projects
@@ -185,25 +474,49 @@ main() {
       list_projects
       ;;
     --help|-h)
-      echo "Usage: tmux-boot [--all|--list|--help]"
+      echo "Usage: tmux-boot [OPTIONS] [ACTION]"
       echo ""
-      echo "  (no args)  Interactive fuzzy picker"
-      echo "  --all      Boot all discovered repos"
-      echo "  --list     List discovered repos"
+      echo "Options:"
+      echo "  --cmd <command>  Startup command (default: claude)"
+      echo "  --no-exclude     Don't exclude node_modules, vendor, etc."
+      echo ""
+      echo "Actions:"
+      echo "  (no action)  Interactive fuzzy picker with preview"
+      echo "  --all        Boot all discovered repos"
+      echo "  --list       List discovered repos"
+      echo "  --last       Switch to previous session (requires tmux)"
+      echo "  --config     Show config file location"
+      echo ""
+      echo "In picker:"
+      echo "  Enter      Select and connect"
+      echo "  Tab        Multi-select"
+      echo "  Ctrl-D     Kill selected session (running only)"
+      echo ""
+      echo "Examples:"
+      echo "  tb                     # Interactive, runs 'claude'"
+      echo "  tb --cmd nvim          # Interactive, runs 'nvim'"
+      echo "  tb --last              # Quick toggle to previous session"
+      echo "  tb --all --cmd ''      # Batch, no auto-command"
+      echo "  tb --no-exclude --list # List all repos including node_modules"
+      echo ""
+      echo "Config file: $CONFIG_FILE"
       echo ""
       echo "Scans for Git repos in:"
       for dir in "${SEARCH_DIRS[@]}"; do
         echo "  $dir"
       done
+      echo ""
+      echo "Excludes (disable with --no-exclude):"
+      echo "  ${EXCLUDE_PATTERNS[*]}"
       ;;
     *)
-      # Interactive fuzzy selection
+      # Interactive fuzzy selection with fzf
       local projects
       projects=$(get_sorted_projects)
 
       if [[ -z "$projects" ]]; then
         echo "No Git repositories found in configured directories"
-        echo "Edit SEARCH_DIRS in this script to add more paths"
+        echo "Edit config at: $CONFIG_FILE"
         exit 1
       fi
 
@@ -211,15 +524,25 @@ main() {
       local names
       names=$(echo "$projects" | cut -d'|' -f1)
 
+      # Get script path for preview/reload callbacks
+      local script_path
+      script_path=$(realpath "$0")
+
       local selected
-      selected=$(echo "$names" | gum filter \
-        --no-limit \
-        --height=15 \
-        --header "Select projects (Tab=multi, Enter=confirm):" \
-        --placeholder "Type to filter...")
+      selected=$(echo "$names" | fzf \
+        --height=80% \
+        --layout=reverse \
+        --border=rounded \
+        --prompt="Project> " \
+        --header="Enter=connect │ Tab=multi │ Ctrl-D=kill session" \
+        --preview="\"$script_path\" --preview {}" \
+        --preview-window=right:50%:wrap \
+        --multi \
+        --bind="ctrl-d:execute-silent(tmux kill-session -t {1} 2>/dev/null)+reload(\"$script_path\" --fzf-list)" \
+      ) || true
 
       if [[ -z "$selected" ]]; then
-        echo "No projects selected"
+        # User pressed Esc or Ctrl-C
         exit 0
       fi
 

@@ -16,7 +16,7 @@ APPS=$(/opt/homebrew/bin/aerospace list-windows --workspace "$WORKSPACE" --forma
 ICON_STRIP=""
 if [ "$APPS" != "" ]; then
 	while IFS= read -r APP; do
-		ICON_RESULT=$("$PLUGIN_DIR/icon_map_omerxx.sh" "$APP")
+		ICON_RESULT=$("$PLUGIN_DIR/icon_map.sh" "$APP")
 		ICON_STRIP+=" $ICON_RESULT"
 	done <<< "$APPS"
 fi
@@ -29,7 +29,7 @@ fi
 # Update workspace indicator
 if [ "$WORKSPACE" = "$FOCUSED_WORKSPACE" ]; then
 	sketchybar --set "$NAME" \
-		icon.color="0xfff7768e" \
+		icon.color="0xff7aa2f7" \
 		label="$ICON_STRIP" \
 		background.drawing=on
 else

@@ -39,13 +39,10 @@ case $1 in
 	echo ""
 	;;
 "Alacritty")
-	echo""
+	echo ""
 	;;
 "kitty")
 	echo "󰄛"
-	;;
-"Ghostty")
-	echo "󰊠"
 	;;
 
 # Development
@@ -53,25 +50,25 @@ case $1 in
 	echo "󰨞"
 	;;
 "Xcode")
-	echo"󰀵"
+	echo "󰀵"
 	;;
 "Android Studio")
-	echo""
+	echo ""
 	;;
 "IntelliJ IDEA" | "IntelliJ")
-	echo""
+	echo ""
 	;;
 "PyCharm")
-	echo""
+	echo ""
 	;;
 "WebStorm")
-	echo""
+	echo ""
 	;;
 "Neovim" | "VimR" | "MacVim")
-	echo""
+	echo ""
 	;;
 "Sublime Text")
-	echo""
+	echo ""
 	;;
 
 # Communication
@@ -79,243 +76,243 @@ case $1 in
 	echo "󰒱"
 	;;
 "Discord")
-	echo"󰙯"
+	echo "󰙯"
 	;;
 "Telegram" | "Telegram Desktop")
-	echo""
+	echo ""
 	;;
 "Messages" | "Nachrichten")
-	echo"󰍦"
+	echo "󰍦"
 	;;
 "WhatsApp")
-	echo""
+	echo ""
 	;;
 "Signal")
-	echo"󰍡"
+	echo "󰍡"
 	;;
 "Zoom" | "zoom.us")
-	echo""
+	echo ""
 	;;
 "Microsoft Teams" | "Teams")
-	echo"󰊻"
+	echo "󰊻"
 	;;
 "Skype")
-	echo""
+	echo ""
 	;;
 
 # Mail
 "Mail" | "邮件")
-	echo"󰇮"
+	echo "󰇮"
 	;;
 "Spark")
-	echo"󰇮"
+	echo "󰇮"
 	;;
 "Outlook" | "Microsoft Outlook")
-	echo"󰴢"
+	echo "󰴢"
 	;;
 "Thunderbird")
-	echo""
+	echo ""
 	;;
 
 # Productivity
 "Notion")
-	echo"󰈚"
+	echo "󰈚"
 	;;
 "Obsidian")
-	echo""
+	echo ""
 	;;
 "Notes" | "备忘录")
-	echo"󱞎"
+	echo "󱞎"
 	;;
 "Reminders" | "提醒事项")
-	echo""
+	echo ""
 	;;
 "Todoist")
-	echo""
+	echo ""
 	;;
 "Trello")
-	echo""
+	echo ""
 	;;
 "Asana")
-	echo""
+	echo ""
 	;;
 "OneNote")
-	echo"󰝇"
+	echo "󰝇"
 	;;
 "Evernote")
-	echo""
+	echo ""
 	;;
 
 # Design
 "Figma")
-	echo""
+	echo ""
 	;;
 "Sketch")
-	echo""
+	echo ""
 	;;
 "Adobe Photoshop" | "Photoshop")
-	echo""
+	echo ""
 	;;
 "Adobe Illustrator" | "Illustrator")
-	echo""
+	echo ""
 	;;
 "Adobe XD")
-	echo""
+	echo ""
 	;;
 "Blender")
-	echo"󰂫"
+	echo "󰂫"
 	;;
 "Affinity Designer")
-	echo""
+	echo ""
 	;;
 "Affinity Photo")
-	echo""
+	echo ""
 	;;
 
 # Media
 "Spotify")
-	echo""
+	echo ""
 	;;
 "Music" | "音乐")
-	echo"󰝚"
+	echo "󰝚"
 	;;
 "TV" | "Apple TV")
-	echo"󰝆"
+	echo "󰝆"
 	;;
 "VLC")
-	echo"󰕼"
+	echo "󰕼"
 	;;
 "IINA")
-	echo"󰕼"
+	echo "󰕼"
 	;;
 "mpv")
-	echo""
+	echo ""
 	;;
 "QuickTime Player" | "QuickTime")
-	echo""
+	echo ""
 	;;
 "Final Cut Pro")
-	echo""
+	echo ""
 	;;
 "Adobe Premiere Pro" | "Premiere Pro")
-	echo""
+	echo ""
 	;;
 
 # System & Utilities
 "Finder" | "访达")
-	echo"󰀶"
+	echo "󰀶"
 	;;
 "System Settings" | "System Preferences" | "系统设置")
-	echo""
+	echo ""
 	;;
 "Activity Monitor")
-	echo"󰔰"
+	echo "󰔰"
 	;;
 "Calculator" | "计算器")
-	echo"󰃬"
+	echo "󰃬"
 	;;
 "Calendar" | "日历")
-	echo""
+	echo ""
 	;;
 "Contacts" | "通讯录")
-	echo"󰛃"
+	echo "󰛃"
 	;;
 "Home")
-	echo"󰋜"
+	echo "󰋜"
 	;;
 "Photos" | "照片")
-	echo"󰉏"
+	echo "󰉏"
 	;;
 "Preview")
-	echo""
+	echo ""
 	;;
 "App Store")
-	echo""
+	echo ""
 	;;
 
 # DevOps & Cloud
 "Docker" | "Docker Desktop")
-	echo""
+	echo ""
 	;;
 "Kubernetes")
-	echo"󱃾"
+	echo "󱃾"
 	;;
 "TablePlus")
-	echo"󰆼"
+	echo "󰆼"
 	;;
 "Postman")
-	echo""
+	echo ""
 	;;
 "Insomnia")
-	echo""
+	echo ""
 	;;
 
 # Virtualization
 "UTM")
-	echo"󰢹"
+	echo "󰢹"
 	;;
 "Parallels Desktop" | "Parallels")
-	echo""
+	echo ""
 	;;
 "VMware Fusion")
-	echo""
+	echo ""
 	;;
 "VirtualBox")
-	echo""
+	echo ""
 	;;
 
 # Office
 "Microsoft Word" | "Word")
-	echo"󰈬"
+	echo "󰈬"
 	;;
 "Microsoft Excel" | "Excel")
-	echo"󰈛"
+	echo "󰈛"
 	;;
 "Microsoft PowerPoint" | "PowerPoint")
-	echo"󰈧"
+	echo "󰈧"
 	;;
 "Pages")
-	echo""
+	echo ""
 	;;
 "Numbers")
-	echo""
+	echo ""
 	;;
 "Keynote")
-	echo""
+	echo ""
 	;;
 
 # Reading & Reference
 "Books" | "图书")
-	echo"󰂺"
+	echo "󰂺"
 	;;
 "PDF Expert")
-	echo""
+	echo ""
 	;;
 "Kindle")
-	echo""
+	echo ""
 	;;
 "Reeder")
-	echo""
+	echo ""
 	;;
 
 # Gaming
 "Steam")
-	echo""
+	echo ""
 	;;
 "Epic Games")
-	echo""
+	echo ""
 	;;
 
 # Security & VPN
 "1Password")
-	echo""
+	echo ""
 	;;
 "Bitwarden")
-	echo""
+	echo ""
 	;;
 
 # Default fallback
 *)
-	echo""
+	echo ""
 	;;
 esac

@@ -19,7 +19,6 @@ stow -D zsh            # Unstow a package
 
 # Shell testing
 time zsh -i -c exit    # Benchmark startup (target <100ms)
-./scripts/benchmark.sh # Detailed performance analysis
 
 # Package management
 brew bundle install    # Install all Brewfile packages
@@ -64,8 +63,8 @@ Modules in `zsh/.config/zsh/modules/` load in numeric order:
 ### Performance Optimizations
 - **Static plugin loading**: Plugins regenerate only when `.zsh_plugins.txt` changes
 - **Completion caching**: `compinit` caches for 24 hours
-- **Minimal plugins**: Only 4 essential plugins
-- **Bun runtime**: Fast JavaScript runtime (no Node/NVM overhead)
+- **Minimal plugins**: 4 essential plugins (zsh-syntax-highlighting, zsh-autosuggestions, zsh-completions, zsh-history-substring-search)
+- **Fast runtimes**: Bun for JS tooling, fnm for Node.js version management
 
 ## Claude Code Configuration
 
@@ -84,7 +83,7 @@ This dotfiles repo manages user-level Claude Code settings via the `claude` stow
 ### What's in Dotfiles
 
 The `claude/.claude/settings.json` file contains:
-- **Plugins**: Ralph Wiggum plugin enabled by default
+- **Plugins**: `rust-analyzer-lsp` and `clangd-lsp` (official Claude plugins)
 - **Settings**: Always-thinking mode enabled
 
 ### Rehoboam Integration
@@ -133,6 +132,8 @@ cp zsh/.config/zsh/modules/00-env-secrets.zsh.example \
 
 ### Adding New ZSH Configuration
 Create numbered module in `zsh/.config/zsh/modules/` (e.g., `08-custom.zsh`).
+
+**Note:** The module glob `0[0-9]-*.zsh` only matches modules 00-09 (max 10 modules).
 
 ## Key Design Decisions
 
@@ -205,7 +206,7 @@ This environment uses modern Rust/Go CLI tools. **Always prefer these over legac
 - Aliases — not loaded in Bash tool
 - `fzf` — interactive, requires human input
 - `lazygit`, `lazydocker`, `btop` — TUI tools for humans, use `git`/`docker`/`procs` instead
-- `nvm`, `fnm` — use Bun instead
+- `nvm` — use fnm or Bun instead
 
 ### Useful Patterns
 ```bash

@@ -1,6 +1,6 @@
 # Essential Keymaps Cheat Sheet
 
-**Last Updated:** 2025-11-17
+**Last Updated:** 2026-02-10
 **Version:** LazyVim 2.0 + Snacks.nvim Suite
 
 Your complete guide to living in LazyVim, complemented by Ghostty/Tmux and Aerospace.
@@ -33,8 +33,7 @@ Aerospace:   5% - Window management
 **LazyVim Distribution:**
 
 - Neovim: 0.11.4
-- Plugins: 59 installed
-- LazyVim Extras: 25 enabled
+- LazyVim Extras: 27 enabled
 - Completion: **blink.cmp** (Rust-based, ultra-fast)
 - Picker: **Snacks picker** (NOT Telescope)
 - File Explorer: **Snacks explorer**
@@ -1789,9 +1788,8 @@ Space qS            # Choose from session list
 
 **Your Complete Setup:**
 
-- **Neovim**: 0.11.4 with LazyVim
-- **Plugins**: 59 installed
-- **LazyVim Extras**: 25 enabled
+- **Neovim**: LazyVim distribution
+- **LazyVim Extras**: 27 enabled
 - **Completion**: blink.cmp (Rust-based, ultra-fast)
 - **Picker**: Snacks picker (NOT Telescope)
 - **File Explorer**: Snacks explorer
@@ -1831,5 +1829,4 @@ All managed via GNU Stow from `~/dotfiles`.
 
 ---
 
-**Built with:** LazyVim (60 plugins, 27 extras), Snacks.nvim suite,
-and Tokyo Night.
+**Built with:** LazyVim (27 extras), Snacks.nvim suite, and Tokyo Night.
