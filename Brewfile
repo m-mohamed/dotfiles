@@ -97,7 +97,6 @@ brew "joncrangle/tap/sketchybar-system-stats"  # System stats for Sketchybar
 cask "orbstack"                  # Docker desktop alternative (faster, lighter)
 cask "raycast"                   # Spotlight alternative with extensions
 cask "discord"                   # Communication platform
-cask "telegram"                  # Messaging app
 cask "zoom"                      # Video conferencing
 cask "keycastr"                  # Keystroke visualizer for screencasts
 cask "ngrok"                     # Secure tunnels to localhost
