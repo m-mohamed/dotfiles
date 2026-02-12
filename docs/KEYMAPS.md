@@ -1564,7 +1564,40 @@ ta <name>           # Attach to session
 tl                  # List sessions
 tn <name>           # New session
 tk <name>           # Kill session
-tmux-nuke           # Kill all sessions
+ts <name>           # Switch session (inside tmux)
+td                  # Detach from session
+tw                  # List windows
+tp                  # List panes
+tka                 # Kill all (nuclear)
+mc                  # Mobile Claude session
+tmux-nuke           # Kill all sessions + clean sockets
+```
+
+### Dev Tool Aliases
+
+```vim
+lg                  # lazygit
+ld                  # lazydocker
+cl                  # claude (Claude Code CLI)
+```
+
+### Cargo Aliases
+
+```vim
+cr                  # cargo run
+cb                  # cargo build
+ct                  # cargo test
+cw                  # cargo watch -x run
+cc!                 # cargo clippy (strict)
+cch                 # cargo check
+```
+
+### Rehoboam Aliases
+
+```vim
+rh                  # rehoboam (start TUI)
+rhd                 # rehoboam --debug
+rhi                 # rehoboam init (hooks for current project)
 ```
 
 ### Rehoboam (Rust TUI)
@@ -1616,10 +1649,17 @@ Alt+h/j/k/l         # Focus window (vim-style)
 Alt+Shift+h/j/k/l   # Move window
 Alt+b/t/d/m/s/e     # Switch workspace (Browser/Terminal/Dev/Media/Slack/Email)
 Alt+Shift+b/t/m/s   # Move window to workspace
+Ctrl+Shift+d/e      # Move window to Dev/Email workspace
 Alt+Tab             # Toggle last workspace
+Alt+u/i             # Previous/next workspace
 Alt+Shift+f         # Toggle fullscreen
+Alt+Shift+Space     # Toggle floating/tiling
 Alt+/               # Toggle layout (horizontal/vertical)
 Alt+,               # Accordion layout (stacked)
+Alt+Shift±          # Resize smart ±50px
+Alt+p/n             # Focus previous/next monitor
+Alt+Shift+p/n       # Move window to previous/next monitor
+Alt+Shift+Tab       # Move workspace to next monitor
 ```
 
 ### Modal Modes
@@ -1631,6 +1671,9 @@ Alt+Space → f       # Toggle floating
 Alt+Space → b       # Balance window sizes
 Alt+Space → h/j/k/l # Join windows
 Alt+Space → -       # Flatten layout (reset)
+Alt+Space → Backspace # Close all windows but current
+Alt+Space → r       # Enter resize mode
+Alt+Space → w       # Enter workspace mode
 Alt+Space → Esc     # Exit mode
 ```
 
@@ -1641,6 +1684,16 @@ Alt+r → h/j/k/l     # Resize by 50px
 Alt+r → Shift+h/j/k/l # Fine resize by 10px
 Alt+r → b           # Balance sizes
 Alt+r → Esc         # Exit mode
+```
+
+#### Workspace Mode (Alt+w)
+
+```vim
+Alt+w → h/l         # Previous/next workspace
+Alt+w → j/k         # Next/previous monitor
+Alt+w → b/t/d/m/s/e # Jump to workspace
+Alt+w → Shift+b/t/d/m/s/e # Move window to workspace and follow
+Alt+w → Esc         # Exit mode
 ```
 
 ### Workspace Layout

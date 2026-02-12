@@ -212,7 +212,55 @@ export LABEL_COLOR=0xffc0caf5    # Text
 
 ---
 
+## direnv (Environment Switcher)
+
+**Config:** Per-project `.envrc` files (auto-loaded on `cd`)
+
+**Shell hook:** `zsh/.config/zsh/modules/07-modern-tools.zsh`
+
+Automatically loads and unloads environment variables when entering/leaving directories. Useful for project-specific secrets, tool versions, and PATH overrides without polluting the global shell.
+
+### Usage
+
+```bash
+# Create a .envrc in any project directory
+echo 'export DATABASE_URL="postgres://..."' > .envrc
+
+# Allow the file (required on first use or after edits)
+direnv allow
+
+# Variables load/unload automatically on cd
+cd ~/project    # → direnv: loading .envrc
+cd ~            # → direnv: unloading
+```
+
+### Key Points
+
+- Hook is installed via `eval "$(direnv hook zsh)"` in `07-modern-tools.zsh`
+- New `.envrc` files must be explicitly allowed with `direnv allow`
+- Pairs well with `.envrc.example` templates committed to repos (real `.envrc` is gitignored)
+
+---
+
 ## Development Stack
+
+### Rust
+
+- **Toolchain:** rustup (manages rustc, cargo, rustfmt, clippy)
+- **LSP:** rust-analyzer
+- **Build Cache:** sccache — shared compilation cache, set via `RUSTC_WRAPPER=sccache` in `00-env.zsh`
+- **Background Checker:** bacon — runs `cargo check`/`cargo clippy` on save (better than cargo-watch)
+
+```bash
+# sccache is configured globally — all cargo builds use it automatically
+sccache --show-stats   # View cache hit rates
+
+# bacon watches your project and shows errors/warnings live
+cd my-rust-project
+bacon              # Default: runs cargo check
+bacon clippy       # Run clippy instead
+bacon test         # Run tests
+```
 
 ### TypeScript/JavaScript
 

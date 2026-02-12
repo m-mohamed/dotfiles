@@ -3,6 +3,27 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## [Unreleased]
+
+### Added
+- Workflow aliases and sprites-rs project
+
+### Fixed
+- Move compdef calls after compinit for correct ZSH completion setup
+- Remove .zprofile symlink check from CI (package removed)
+
+### Changed
+- Migrate from WezTerm to Ghostty + Tmux
+- Replace tmux-boot JSON config with Git auto-discovery
+- Comprehensive dotfiles audit and fixes
+- Simplify README and remove verbose documentation
+
+### Removed
+- WezTerm remnants (fully replaced by Ghostty + Tmux)
+- Termius cask (broken CDN)
+- Telegram cask (broken CDN)
+- Anthropic Ralph plugin (replaced by Rehoboam)
+
 ## [1.0.0] - 2026-01-08
 
 ### Added

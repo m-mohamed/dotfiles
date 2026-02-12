@@ -48,9 +48,9 @@ Modules in `zsh/.config/zsh/modules/` load in numeric order:
 02-options.zsh      # Shell options, history, completions
 03-aliases.zsh      # Command aliases
 04-keybindings.zsh  # Vi mode with cursor shapes
-05-tools.zsh        # Tool integrations (zoxide, starship)
-06-plugins.zsh      # Antidote static plugin loading
-07-modern-tools.zsh # Modern CLI (eza, bat, fzf, ripgrep)
+05-tools.zsh        # Tool integrations (fnm, zoxide, starship)
+06-plugins.zsh      # Antidote plugins, compinit & compdef
+07-modern-tools.zsh # Modern CLI (eza, bat, fzf, direnv, delta)
 ```
 
 ### Shell Init Order
@@ -111,7 +111,6 @@ MCP servers stay in each project's `.mcp.json` because:
 ## Further Reading
 
 For detailed documentation, see:
-- [docs/GUIDE.md](docs/GUIDE.md) - Complete architecture guide
 - [docs/KEYMAPS.md](docs/KEYMAPS.md) - All keybindings
 - [docs/TOOLS.md](docs/TOOLS.md) - Tool configuration reference
 
