@@ -132,3 +132,46 @@ fi
 # Vi mode bindings
 bindkey -M vicmd 'k' history-substring-search-up
 bindkey -M vicmd 'j' history-substring-search-down
+
+# ══════════════════════════════════════════════════════════════════════
+# Completion Definitions for Aliases (must be after compinit)
+# ══════════════════════════════════════════════════════════════════════
+
+# Neovim aliases
+compdef v=nvim
+compdef vi=nvim
+compdef vim=nvim
+compdef vk=nvim
+compdef avante=nvim
+
+# Git aliases
+compdef g=git
+compdef ga=git
+compdef gaa=git
+compdef gb=git
+compdef gco=git
+compdef gcb=git
+compdef gcm=git
+compdef gca=git
+compdef gp=git
+compdef gpf=git
+compdef gpl=git
+compdef gst=git
+compdef gstp=git
+compdef glo=git
+compdef grb=git
+compdef grbi=git
+compdef grs=git
+compdef grsh=git
+compdef gcp=git
+compdef gits=git
+compdef gitd=git
+compdef gitl=git
+compdef gita=git
+compdef gitc=git
+
+# Tmux aliases
+compdef ta=tmux
+compdef tk=tmux
+compdef tn=tmux
+compdef ts=tmux
