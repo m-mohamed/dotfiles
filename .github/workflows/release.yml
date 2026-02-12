@@ -1,0 +1,179 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump type
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-pr:
+    name: Release PR
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'chore: release')"
+    concurrency:
+      group: release-pr
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Check for releasable commits
+        id: check
+        run: |
+          unreleased=$(git-cliff --unreleased --strip header)
+          if ! echo "$unreleased" | grep -q '^### '; then
+            echo "No releasable commits found"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Determine version bump
+        if: steps.check.outputs.skip != 'true'
+        id: bump
+        run: |
+          if [[ "${{ github.event.inputs.bump }}" != "" && "${{ github.event.inputs.bump }}" != "auto" ]]; then
+            echo "type=${{ github.event.inputs.bump }}" >> "$GITHUB_OUTPUT"
+          else
+            unreleased=$(git-cliff --unreleased --strip header)
+            if echo "$unreleased" | grep -q '### Added'; then
+              echo "type=minor" >> "$GITHUB_OUTPUT"
+            else
+              echo "type=patch" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Compute next version
+        if: steps.check.outputs.skip != 'true'
+        id: version
+        run: |
+          current=$(cat VERSION)
+          IFS='.' read -r major minor patch <<< "$current"
+
+          case "${{ steps.bump.outputs.type }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          next="${major}.${minor}.${patch}"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Generate changelog
+        if: steps.check.outputs.skip != 'true'
+        run: git-cliff --tag "v${{ steps.version.outputs.next }}" -o CHANGELOG.md
+
+      - name: Update VERSION file
+        if: steps.check.outputs.skip != 'true'
+        run: echo "${{ steps.version.outputs.next }}" > VERSION
+
+      - name: Create release PR
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          branch="release/v${{ steps.version.outputs.next }}"
+          git checkout -B "$branch"
+          git add CHANGELOG.md VERSION
+          git commit -m "chore: release v${{ steps.version.outputs.next }}"
+          git push --force origin "$branch"
+
+          body=$(git-cliff --unreleased --strip header)
+
+          if gh pr view "$branch" &>/dev/null; then
+            gh pr edit "$branch" \
+              --title "chore: release v${{ steps.version.outputs.next }}" \
+              --body "$body"
+          else
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "chore: release v${{ steps.version.outputs.next }}" \
+              --body "$body"
+          fi
+
+          # Add label (non-fatal if label doesn't exist)
+          gh pr edit "$branch" --add-label "release" 2>/dev/null || true
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: "startsWith(github.event.head_commit.message, 'chore: release')"
+    concurrency:
+      group: release-publish
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          notes=$(git-cliff --latest --strip header)
+          # Use a delimiter for multiline output
+          delimiter="$(openssl rand -hex 16)"
+          echo "body<<${delimiter}" >> "$GITHUB_OUTPUT"
+          echo "$notes" >> "$GITHUB_OUTPUT"
+          echo "${delimiter}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --notes "${{ steps.notes.outputs.body }}"

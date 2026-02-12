@@ -1,0 +1,71 @@
+# git-cliff configuration
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+# Changelog header
+header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+"""
+
+# Template for each release
+body = """
+{% if version -%}
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+## [Unreleased]
+{% endif -%}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first | upper_first | trim }}
+{%- endfor %}
+{% endfor %}
+"""
+
+# Footer with version comparison links (tags use v prefix)
+footer = """
+{% for release in releases -%}
+{% if release.version -%}
+{% if release.previous.version -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/m-mohamed/dotfiles/compare/v{{ release.previous.version | trim_start_matches(pat="v") }}...v{{ release.version | trim_start_matches(pat="v") }}
+{% else -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/m-mohamed/dotfiles/releases/tag/v{{ release.version | trim_start_matches(pat="v") }}
+{% endif -%}
+{% else -%}
+[Unreleased]: https://github.com/m-mohamed/dotfiles/compare/v{{ release.previous.version | trim_start_matches(pat="v") }}...HEAD
+{% endif -%}
+{% endfor %}
+"""
+
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+protect_breaking_commits = true
+topo_order = false
+sort_commits = "newest"
+
+# Map conventional commits to Keep a Changelog sections
+commit_parsers = [
+    { message = "^feat", group = "Added" },
+    { message = "^fix", group = "Fixed" },
+    { message = "^perf", group = "Changed" },
+    { message = "^refactor", group = "Changed" },
+    { message = "^docs", group = "Documentation" },
+    { message = "^style", group = "Changed" },
+    { message = "^test", skip = true },
+    { message = "^chore\\(deps\\)", skip = true },
+    { message = "^chore\\(ci\\)", skip = true },
+    { message = "^chore", group = "Changed" },
+    { message = "^ci", skip = true },
+]
+
+# Skip these commit types from changelog
+filter_commits = true

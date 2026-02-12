@@ -79,6 +79,7 @@ brew "sccache"                   # Shared compilation cache for faster builds
 # ══════════════════════════════════════════════════════════════════════
 brew "git"                       # Version control
 brew "gh"                        # GitHub CLI
+brew "git-cliff"                 # Changelog generator (same as Rehoboam)
 brew "lazygit"                   # Terminal UI for git
 brew "lazydocker"                # Terminal UI for docker
 brew "uv"                        # Python package installer and resolver
