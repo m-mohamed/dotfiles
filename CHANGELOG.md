@@ -1,41 +1,44 @@
 # Changelog
 
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.0] - 2026-02-12
 
 ### Added
-- Workflow aliases and sprites-rs project
 
-### Fixed
-- Move compdef calls after compinit for correct ZSH completion setup
-- Remove .zprofile symlink check from CI (package removed)
+- Add release automation with git-cliff
+- Add workflow aliases and sprites-rs project
+- Migrate from WezTerm to Ghostty + Tmux
 
 ### Changed
-- Migrate from WezTerm to Ghostty + Tmux
-- Replace tmux-boot JSON config with Git auto-discovery
+
+- Remove termius cask (broken CDN)
+- Remove telegram cask (broken CDN)
 - Comprehensive dotfiles audit and fixes
+- Replace JSON config with Git auto-discovery
+- Remove Anthropic Ralph plugin (using Rehoboam's implementation)
+- Remove all WezTerm remnants, polish Ghostty + Tmux
+
+### Documentation
+
+- Sync documentation with recent codebase changes
 - Simplify README and remove verbose documentation
 
-### Removed
-- WezTerm remnants (fully replaced by Ghostty + Tmux)
-- Termius cask (broken CDN)
-- Telegram cask (broken CDN)
-- Anthropic Ralph plugin (replaced by Rehoboam)
+### Fixed
 
-## [1.0.0] - 2026-01-08
+- Move compdef calls after compinit
+- Remove .zprofile symlink check (package removed)
+## [1.0.0] - 2026-01-09
 
 ### Added
-- ZSH with Antidote, <100ms startup
-- Neovim (LazyVim) with Tokyo Night theme
-- Ghostty terminal + Tmux session management
-- Aerospace tiling window manager
-- Sketchybar custom menu bar
-- Modern CLI tools (eza, bat, fd, rg, delta)
-- Claude Code hooks for rehoboam
-- Comprehensive documentation
 
-Note: Pre-1.0 changelog entries were not tracked. See git tags for earlier release history.
+- MacOS dotfiles with GNU Stow
 
-[1.0.0]: https://github.com/m-mohamed/dotfiles/releases/tag/v1.0.0
+### Documentation
+
+- Simplify changelog for v1.0.0 release
+[1.1.0]: https://github.com/m-mohamed/dotfiles/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/m-mohamed/dotfiles/compare/v0.6.3...v1.0.0
+
