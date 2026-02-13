@@ -37,7 +37,9 @@ footer = """
 [{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/m-mohamed/dotfiles/releases/tag/v{{ release.version | trim_start_matches(pat="v") }}
 {% endif -%}
 {% else -%}
+{% if release.previous.version -%}
 [Unreleased]: https://github.com/m-mohamed/dotfiles/compare/v{{ release.previous.version | trim_start_matches(pat="v") }}...HEAD
+{% endif -%}
 {% endif -%}
 {% endfor %}
 """
