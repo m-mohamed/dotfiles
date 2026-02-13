@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add release automation with git-cliff
-- Add workflow aliases and sprites-rs project
+- Update project aliases for current directory structure (Corvus, Voiya, Rehoboam)
 - Migrate from WezTerm to Ghostty + Tmux
 
 ### Changed
