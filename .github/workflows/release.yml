@@ -156,7 +156,7 @@ jobs:
       - name: Generate release notes
         id: notes
         run: |
-          notes=$(git-cliff --latest --strip header)
+          notes=$(git-cliff --tag "v${{ steps.version.outputs.version }}" --latest --strip header)
           # Use a delimiter for multiline output
           delimiter="$(openssl rand -hex 16)"
           echo "body<<${delimiter}" >> "$GITHUB_OUTPUT"
