@@ -83,8 +83,8 @@ This dotfiles repo manages user-level Claude Code settings via the `claude` stow
 ### What's in Dotfiles
 
 The `claude/.claude/settings.json` file contains:
-- **Plugins**: `rust-analyzer-lsp` and `clangd-lsp` (official Claude plugins)
-- **Settings**: Always-thinking mode enabled
+- **Settings**: Always-thinking mode enabled, model pinned to Opus
+- **Subagent routing**: `ANTHROPIC_DEFAULT_HAIKU_MODEL` remaps haiku → Sonnet 4.6
 
 ### Rehoboam Integration
 
