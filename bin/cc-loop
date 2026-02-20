@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# cc-loop — Run Claude Code in an autonomous loop until done.
+# Each iteration gets a fresh context window. Progress is committed between rounds.
+# Supports local (claude -p) and remote (claude --remote) execution.
+#
+# Usage:
+#   cc-loop PROMPT.md                    # Local, default 15 iterations
+#   cc-loop PROMPT.md -n 30             # Local, 30 iterations
+#   cc-loop PROMPT.md --remote          # Each iteration on Anthropic cloud VMs
+#   cc-loop PROMPT.md --remote -n 50    # Remote, 50 iterations
+#
+# The prompt file should include:
+#   - Clear task description
+#   - Completion criteria
+#   - "Write LOOP_COMPLETE to a file called .cc-loop-done when finished"
+#
+# Requires: claude CLI, git
+
+set -euo pipefail
+
+# --- Defaults ---
+MAX_ITERATIONS=15
+REMOTE=false
+PROMPT_FILE=""
+LOG_DIR=".cc-loop-logs"
+DONE_MARKER=".cc-loop-done"
+TOOLS="Edit,Write,Bash,Read,Glob,Grep,Task"
+
+# --- Parse args ---
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -n|--max-iterations)
+      MAX_ITERATIONS="$2"
+      shift 2
+      ;;
+    --remote)
+      REMOTE=true
+      shift
+      ;;
+    --tools)
+      TOOLS="$2"
+      shift 2
+      ;;
+    -h|--help)
+      echo "Usage: cc-loop <prompt-file> [-n max-iterations] [--remote] [--tools 'Tool1,Tool2']"
+      echo ""
+      echo "Options:"
+      echo "  -n, --max-iterations  Max loop iterations (default: 15)"
+      echo "  --remote              Run each iteration on Anthropic cloud VMs"
+      echo "  --tools               Comma-separated allowed tools (default: Edit,Write,Bash,Read,Glob,Grep,Task)"
+      echo "  -h, --help            Show this help"
+      echo ""
+      echo "The prompt file should instruct Claude to write LOOP_COMPLETE"
+      echo "to .cc-loop-done when all work is finished."
+      exit 0
+      ;;
+    *)
+      if [[ -z "$PROMPT_FILE" ]]; then
+        PROMPT_FILE="$1"
+      else
+        echo "Error: unexpected argument '$1'" >&2
+        exit 1
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$PROMPT_FILE" ]]; then
+  echo "Error: prompt file required" >&2
+  echo "Usage: cc-loop <prompt-file> [-n max-iterations] [--remote]" >&2
+  exit 1
+fi
+
+if [[ ! -f "$PROMPT_FILE" ]]; then
+  echo "Error: prompt file '$PROMPT_FILE' not found" >&2
+  exit 1
+fi
+
+# --- Setup ---
+mkdir -p "$LOG_DIR"
+rm -f "$DONE_MARKER"
+START_TIME=$(date +%s)
+
+echo "╔══════════════════════════════════════╗"
+echo "║          cc-loop starting            ║"
+echo "╠══════════════════════════════════════╣"
+echo "║  Prompt:     $(basename "$PROMPT_FILE")"
+echo "║  Max iters:  $MAX_ITERATIONS"
+echo "║  Mode:       $(if $REMOTE; then echo 'remote (cloud VMs)'; else echo 'local'; fi)"
+echo "║  Tools:      $TOOLS"
+echo "║  Logs:       $LOG_DIR/"
+echo "╚══════════════════════════════════════╝"
+echo ""
+
+PROMPT_CONTENT=$(cat "$PROMPT_FILE")
+
+# Append loop context to prompt
+LOOP_PROMPT="$PROMPT_CONTENT
+
+---
+LOOP INSTRUCTIONS (injected by cc-loop):
+- You are running in an autonomous loop. This may not be the first iteration.
+- Check git log and file state to understand what previous iterations accomplished.
+- Pick up where the last iteration left off. Do NOT redo completed work.
+- When ALL tasks are complete, write the word LOOP_COMPLETE to a file called $DONE_MARKER
+- If you cannot make further progress, write LOOP_STUCK to $DONE_MARKER with a description of what's blocking."
+
+# --- Main loop ---
+for i in $(seq 1 "$MAX_ITERATIONS"); do
+  echo "━━━ Iteration $i/$MAX_ITERATIONS ━━━ $(date '+%H:%M:%S') ━━━"
+
+  LOG_FILE="$LOG_DIR/iteration-$i.txt"
+
+  if $REMOTE; then
+    # Remote: run on Anthropic cloud VMs
+    claude --remote "$LOOP_PROMPT" 2>&1 | tee "$LOG_FILE"
+  else
+    # Local: headless mode
+    claude -p "$LOOP_PROMPT" \
+      --allowedTools "$TOOLS" \
+      --dangerously-skip-permissions \
+      2>&1 | tee "$LOG_FILE"
+  fi
+
+  # Check for completion marker
+  if [[ -f "$DONE_MARKER" ]]; then
+    RESULT=$(cat "$DONE_MARKER")
+    if echo "$RESULT" | grep -q "LOOP_COMPLETE"; then
+      ELAPSED=$(( $(date +%s) - START_TIME ))
+      echo ""
+      echo "✓ Done at iteration $i ($(( ELAPSED / 60 ))m $(( ELAPSED % 60 ))s)"
+      echo "  Check $LOG_DIR/ for iteration logs"
+      # Commit final state
+      git add -A && git commit -m "cc-loop: complete after $i iterations" 2>/dev/null || true
+      exit 0
+    elif echo "$RESULT" | grep -q "LOOP_STUCK"; then
+      echo ""
+      echo "✗ Stuck at iteration $i"
+      echo "  Reason: $(cat "$DONE_MARKER")"
+      git add -A && git commit -m "cc-loop: stuck at iteration $i" 2>/dev/null || true
+      exit 1
+    fi
+  fi
+
+  # Commit progress between iterations
+  if git diff --quiet && git diff --cached --quiet; then
+    echo "  (no changes this iteration)"
+  else
+    git add -A && git commit -m "cc-loop: iteration $i" 2>/dev/null || true
+    echo "  ✓ progress committed"
+  fi
+
+  echo ""
+done
+
+# Reached max iterations
+ELAPSED=$(( $(date +%s) - START_TIME ))
+echo "⚠ Reached max iterations ($MAX_ITERATIONS) after $(( ELAPSED / 60 ))m $(( ELAPSED % 60 ))s"
+echo "  Review progress in git log and $LOG_DIR/"
+git add -A && git commit -m "cc-loop: max iterations ($MAX_ITERATIONS) reached" 2>/dev/null || true
+exit 2
