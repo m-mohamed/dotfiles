@@ -375,38 +375,44 @@ migrate_history
 INSTALL_STATE+=("History migrated")
 
 # ══════════════════════════════════════════════════════════════════════
-# 7. Setup brew-autoupdate for Automated Maintenance
+# 7. Setup brew-autoupdate for Automated Maintenance (macOS only)
 # ══════════════════════════════════════════════════════════════════════
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${CYAN}  Step 7: Setting Up Automated Homebrew Updates${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-if brew tap | grep -q "domt4/autoupdate"; then
-  echo -e "${GREEN}✓ brew-autoupdate already tapped${NC}"
+if [[ "$OSTYPE" == linux* ]]; then
+  echo "  Skipping brew-autoupdate (uses macOS launchd, not available on Linux)"
+  echo "  On Linux, use a cron job or systemd timer for brew updates instead"
+  INSTALL_STATE+=("brew-autoupdate skipped (Linux)")
 else
-  echo "Tapping DomT4/homebrew-autoupdate..."
-  if brew tap DomT4/homebrew-autoupdate 2>&1; then
-    echo -e "${GREEN}✓ brew-autoupdate tapped${NC}"
+  if brew tap | grep -q "domt4/autoupdate"; then
+    echo -e "${GREEN}✓ brew-autoupdate already tapped${NC}"
   else
-    warn "Could not tap brew-autoupdate (non-critical)"
+    echo "Tapping DomT4/homebrew-autoupdate..."
+    if brew tap DomT4/homebrew-autoupdate 2>&1; then
+      echo -e "${GREEN}✓ brew-autoupdate tapped${NC}"
+    else
+      warn "Could not tap brew-autoupdate (non-critical)"
+    fi
   fi
-fi
 
-# Check if autoupdate is already running
-if brew autoupdate status 2>&1 | grep -q "running"; then
-  echo -e "${GREEN}✓ brew-autoupdate already configured${NC}"
-else
-  echo "Configuring brew-autoupdate (daily updates + cleanup)..."
-  if brew autoupdate start --upgrade --cleanup 2>&1; then
-    echo -e "${GREEN}✓ brew-autoupdate configured${NC}"
-    echo "  Homebrew will auto-update daily via macOS launchd"
+  # Check if autoupdate is already running
+  if brew autoupdate status 2>&1 | grep -q "running"; then
+    echo -e "${GREEN}✓ brew-autoupdate already configured${NC}"
   else
-    warn "Could not configure brew-autoupdate (non-critical, you can do it manually)"
+    echo "Configuring brew-autoupdate (daily updates + cleanup)..."
+    if brew autoupdate start --upgrade --cleanup 2>&1; then
+      echo -e "${GREEN}✓ brew-autoupdate configured${NC}"
+      echo "  Homebrew will auto-update daily via macOS launchd"
+    else
+      warn "Could not configure brew-autoupdate (non-critical, you can do it manually)"
+    fi
   fi
-fi
 
-INSTALL_STATE+=("brew-autoupdate configured")
+  INSTALL_STATE+=("brew-autoupdate configured")
+fi
 
 # ══════════════════════════════════════════════════════════════════════
 # 8. Install bat Tokyo Night Theme (Optional)

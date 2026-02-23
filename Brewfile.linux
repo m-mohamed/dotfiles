@@ -1,0 +1,67 @@
+# Brewfile.linux - CLI-only subset for headless Linux (e.g., Distiller Pi CM5)
+# Install: brew bundle install --file=Brewfile.linux
+#
+# Excludes: all casks, macOS-only brews (borders, sketchybar, mole,
+# terminal-notifier, sketchybar-system-stats), macOS-only taps
+
+# ══════════════════════════════════════════════════════════════════════
+# Taps
+# ══════════════════════════════════════════════════════════════════════
+tap "oven-sh/bun"                # For bun JavaScript runtime
+
+# ══════════════════════════════════════════════════════════════════════
+# Core Shell & Terminal
+# ══════════════════════════════════════════════════════════════════════
+brew "stow"                      # Symlink management
+brew "zsh"                       # Shell (keep updated)
+brew "starship"                  # Cross-shell prompt
+brew "tmux"                      # Terminal multiplexer
+
+# ══════════════════════════════════════════════════════════════════════
+# Editor
+# ══════════════════════════════════════════════════════════════════════
+brew "neovim"                    # Hyperextensible Vim-based editor
+
+# ══════════════════════════════════════════════════════════════════════
+# Modern CLI Tools (Rust-based, Fast)
+# ══════════════════════════════════════════════════════════════════════
+brew "eza"                       # Modern ls (exa fork, maintained)
+brew "bat"                       # Cat with syntax highlighting
+brew "ripgrep"                   # Fast grep (rg)
+brew "fd"                        # Fast find
+brew "fzf"                       # Fuzzy finder
+brew "zoxide"                    # Smart cd
+brew "delta"                     # Better git diffs
+brew "dust"                      # Disk usage visualizer (du replacement)
+brew "procs"                     # Process viewer (ps replacement)
+brew "tokei"                     # Code statistics (fast cloc)
+brew "hyperfine"                 # CLI benchmarking tool
+brew "btop"                      # Process monitor (htop replacement)
+brew "direnv"                    # Load/unload env vars by directory
+brew "tldr"                      # Simplified man pages
+brew "jq"                        # JSON processor
+brew "wget"                      # Internet file retriever
+brew "gum"                       # Glamorous shell scripts (tmux-boot UI)
+
+# ══════════════════════════════════════════════════════════════════════
+# Development Tools
+# ══════════════════════════════════════════════════════════════════════
+brew "git"                       # Version control
+brew "gh"                        # GitHub CLI
+brew "git-cliff"                 # Changelog generator
+brew "lazygit"                   # Terminal UI for git
+brew "lazydocker"                # Terminal UI for docker
+brew "uv"                        # Python package installer and resolver
+brew "ruff"                      # Fast Python linter/formatter
+brew "oven-sh/bun/bun"           # Fast JavaScript runtime
+brew "fnm"                       # Fast Node Manager (Rust-based nvm alternative)
+brew "pnpm"                      # Fast, disk-efficient package manager
+brew "biome"                     # Fast TypeScript/JavaScript linter and formatter
+
+# ══════════════════════════════════════════════════════════════════════
+# Rust Development
+# ══════════════════════════════════════════════════════════════════════
+brew "rustup"                    # Rust toolchain manager
+brew "rust-analyzer"             # Rust LSP
+brew "bacon"                     # Background Rust code checker
+brew "sccache"                   # Shared compilation cache
