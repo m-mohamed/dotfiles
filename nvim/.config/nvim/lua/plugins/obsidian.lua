@@ -101,7 +101,8 @@ return {
 
       -- Additional options
       follow_url_func = function(url)
-        vim.fn.jobstart({ "open", url }) -- macOS
+        local cmd = vim.fn.has("mac") == 1 and "open" or "xdg-open"
+        vim.fn.jobstart({ cmd, url })
       end,
 
       -- Disable some features that conflict with LazyVim

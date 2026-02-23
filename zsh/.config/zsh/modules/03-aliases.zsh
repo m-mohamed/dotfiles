@@ -5,7 +5,11 @@
 # System & Navigation
 # ══════════════════════════════════════════════════════════════════════
 alias c='clear'
-alias ip="ipconfig getifaddr en0"  # Get machine's IP address
+if [[ "$OSTYPE" == darwin* ]]; then
+  alias ip="ipconfig getifaddr en0"
+else
+  alias ip="hostname -I | awk '{print \$1}'"
+fi
 
 # ══════════════════════════════════════════════════════════════════════
 # Configuration Management
