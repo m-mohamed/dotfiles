@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.0] - 2026-02-27
+
+### Added
+
+- Add dev-server host via Tailscale
+- Add Distiller host with ed25519 key auth
+- Add Linux support for Distiller deployment
+- Add cc-loop for autonomous Claude Code sessions
+- Route subagent models to Sonnet 4.6
+
+### Documentation
+
+- Update settings description in CLAUDE.md
+
+### Fixed
+
+- Add cross-platform guards for Linux compatibility
+- Remove plugins from global settings
 ## [0.1.0] - 2026-02-13
 
 ### Added
@@ -15,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Release v0.1.0 (#3)
 - Reset versioning to 0.0.0
 - Update project paths and aliases for current directory structure
 - Release v1.1.0 (#1)
@@ -37,5 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use --tag flag for release notes generation
 - Move compdef calls after compinit
 - Remove .zprofile symlink check (package removed)
+[0.2.0]: https://github.com/m-mohamed/dotfiles/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/m-mohamed/dotfiles/releases/tag/v0.1.0
 
